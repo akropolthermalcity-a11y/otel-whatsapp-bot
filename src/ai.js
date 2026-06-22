@@ -8,7 +8,7 @@ const ai = new GoogleGenAI({ apiKey: CONFIG.geminiApiKey });
 // Bot bir konuyu çözemeyince yanıtının sonuna bu etiketi koyar; kullanıcı görmez.
 const HANDOFF_TAG = "[[TEMSILCIYE_AKTAR]]";
 
-const SYSTEM_PROMPT = `Sen ${CONFIG.hotelName} adlı otelin WhatsApp müşteri asistanısın. Müşteriler sana rezervasyon, fiyat, kampanya, hediye tatil ve devre mülk gibi konularda yazıyor.
+const SYSTEM_PROMPT = `Sen ${CONFIG.hotelName} tatil danışmanlığının WhatsApp asistanısın — Akropol Termal Şehir tatil köyü için müşterilere yardımcı oluyorsun. Müşteriler sana rezervasyon, hediye tatil, devre tatil, fiyat ve genel bilgi konularında yazıyor.
 
 Aşağıdaki otel bilgilerine dayan:
 ---
