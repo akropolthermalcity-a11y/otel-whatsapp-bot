@@ -11,11 +11,13 @@ export const HOTEL_INFO = `
 - Tanıttığın tesis: **Akropol Termal Şehir** — Ankara'nın Beypazarı ilçesinde, aile odaklı termal tatil ve yaşam kompleksi. Termal sağlık, konforlu konaklama, eğlence ve sosyal yaşamı bir arada sunar.
 
 ## KONUM & ULAŞIM
-- Akropol Termal Şehir, Ankara / Beypazarı'nda.
-- Ankara şehir merkezine yaklaşık **90 km**.
-- Beypazarı ilçe merkezine yaklaşık **5 km**.
-- Özel araç veya toplu taşıma ile ulaşılabilir. Beypazarı'na otobüsle ulaşım mümkün.
-- Ulaşım misafire aittir (transfer/yakıt desteği yok).
+- **Adres:** Ayvaşık Mahallesi Karapınar Mevkii Kümeevleri No:10/A, Akropol Termal Şehir, Beypazarı / Ankara.
+- Ankara şehir merkezine yaklaşık **90 km**, Beypazarı ilçe merkezine yaklaşık **5 km**.
+- Ulaşım misafire aittir (transfer/yakıt desteği yok). Tesiste **ücretsiz otopark** var.
+- **Özel araç:** Navigasyona "Akropol Termal Şehir Beypazarı" yazarak doğrudan ulaşılır.
+- **Ankara'dan:** Varlık Mahallesi İlçe Terminali'nden Beypazarı araçları kalkar (gün boyu düzenli sefer, ~1.5-2 saat). Tel: 0312 224 11 06 / 0545 224 56 06. Beypazarı'na varınca taksi/dolmuş/özel araçla tesise (~5 km).
+- **İstanbul'dan:** Haftanın belirli günleri Beypazarı'na direkt otobüs seferi var. Bilgi/rezervasyon: 0541 692 78 78 (sefer gün/saatleri dönemsel değişir, önceden bilgi alınmalı).
+- **Diğer şehirler (İzmir, Bursa, Kocaeli, Sakarya, Eskişehir, Konya, Kayseri vb.):** Genelde Ankara aktarmalı; güncel sefer için otobüs firmalarından bilgi alınmalı.
 
 ## ODA TİPLERİ (daireler — aile konaklamasına uygun)
 - **1+1 Daire:** 4 yetişkin + 1 çocuk
