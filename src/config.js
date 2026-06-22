@@ -29,4 +29,7 @@ export const CONFIG = {
 
   // Otel
   hotelName: process.env.HOTEL_NAME || "Otelimiz",
+
+  // Görüşme kaydı + e-posta bildirimi (Google Apps Script Web App URL'i)
+  logWebhookUrl: process.env.LOG_WEBHOOK_URL || "",
 };

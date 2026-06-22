@@ -2,6 +2,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { CONFIG } from "./config.js";
 import { HOTEL_INFO } from "./hotelInfo.js";
+import { logConversation } from "./logger.js";
 
 const ai = new GoogleGenAI({ apiKey: CONFIG.geminiApiKey });
 
@@ -59,13 +60,23 @@ export async function generateReply(from, userText, name) {
   conversations.set(from, history.slice(-MAX_TURNS * 2));
 
   // Temsilciye aktarma kontrolü
+  let handoff = false;
   if (reply.includes(HANDOFF_TAG)) {
     reply = reply.split(HANDOFF_TAG).join("").trim();
+    handoff = true;
     console.log(`🔔 TEMSİLCİYE AKTARMA — ${name ?? "müşteri"} (${from})`);
-    // TODO: Buraya gerçek bildirim eklenebilir:
-    //   - yetkiliye WhatsApp/e-posta atma
-    //   - bir panele/CRM'e kayıt
   }
 
-  return reply || "Mesajınızı aldım, size yardımcı olmaktan memnuniyet duyarım. 🙂";
+  const finalReply = reply || "Mesajınızı aldım, size yardımcı olmaktan memnuniyet duyarım. 🙂";
+
+  // Görüşmeyi Google Sheet'e kaydet; aktarma varsa e-posta tetiklenir (Apps Script tarafında)
+  logConversation({
+    numara: from,
+    isim: name ?? "",
+    mesaj: userText,
+    cevap: finalReply,
+    aktarma: handoff,
+  });
+
+  return finalReply;
 }
