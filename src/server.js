@@ -2,7 +2,7 @@
 import express from "express";
 import { CONFIG } from "./config.js";
 import { extractIncomingMessages, markAsRead, sendText } from "./whatsapp.js";
-import { generateReply } from "./ai.js";
+import { handleMessage } from "./router.js";
 
 const app = express();
 app.use(express.json());
@@ -36,7 +36,7 @@ app.post("/webhook", async (req, res) => {
         continue;
       }
       markAsRead(msg.id).catch(() => {});
-      const reply = await generateReply(msg.from, msg.text, msg.name);
+      const reply = await handleMessage(msg.from, msg.text, msg.name);
       await sendText(msg.from, reply);
     }
   } catch (err) {

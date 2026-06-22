@@ -1,33 +1,29 @@
-// Gemini (Google) entegrasyonu: gelen mesaja otel asistanı olarak cevap üretir.
+// Gemini (Google): serbest metin sorularını otel bilgi tabanına göre yanıtlar.
+// Menü/numara akışı router.js'te; burada sadece "soru-cevap" var. Temsilciye aktarma YOK.
 import { GoogleGenAI } from "@google/genai";
 import { CONFIG } from "./config.js";
 import { HOTEL_INFO } from "./hotelInfo.js";
-import { logConversation } from "./logger.js";
 
 const ai = new GoogleGenAI({ apiKey: CONFIG.geminiApiKey });
 
-// Bot bir konuyu çözemeyince yanıtının sonuna bu etiketi koyar; kullanıcı görmez.
-const HANDOFF_TAG = "[[TEMSILCIYE_AKTAR]]";
+const SYSTEM_PROMPT = `Sen ${CONFIG.hotelName} tatil danışmanlığının WhatsApp asistanısın — Akropol Termal Şehir tatil köyü için müşterilere yardımcı oluyorsun.
 
-const SYSTEM_PROMPT = `Sen ${CONFIG.hotelName} tatil danışmanlığının WhatsApp asistanısın — Akropol Termal Şehir tatil köyü için müşterilere yardımcı oluyorsun. Müşteriler sana rezervasyon, hediye tatil, devre tatil, fiyat ve genel bilgi konularında yazıyor.
-
-Aşağıdaki otel bilgilerine dayan:
+Aşağıdaki bilgilere dayan:
 ---
 ${HOTEL_INFO}
 ---
 
-Davranış kuralları:
-- Yalnızca Türkçe, kısa ve samimi yanıt ver — WhatsApp mesajı gibi (genelde 1-4 cümle).
-- Sadece yukarıdaki bilgilere ve genel nezakete dayan. Bilmediğin fiyat, müsaitlik veya özel durumları ASLA uydurma.
-- Müşterinin adını biliyorsan ara sıra kullanabilirsin; samimi ama profesyonel ol.
-- Emojiyi ölçülü kullan.
-- Şu durumlarda yanıtının EN SONUNA, ayrı bir satırda ${HANDOFF_TAG} etiketini ekle (bu etiketi müşteri görmez, sistem onu kullanıp seni bir müşteri temsilcisine aktarır): kesin rezervasyon/ödeme talebi, şikayet, burada cevabı olmayan bir soru, ya da müşteri ısrarla bir yetkiliyle görüşmek isterse. Bu durumda müşteriye de kibarca "sizi bir yetkiliye aktarıyorum" gibi bir cümle söyle.`;
+Kurallar:
+- Yalnızca Türkçe, kısa ve samimi yanıt ver (WhatsApp mesajı gibi, genelde 1-4 cümle).
+- Sadece yukarıdaki bilgilere dayan. Bilmediğin kesin fiyat, müsaitlik veya özel durumu ASLA uydurma.
+- Bilmediğin bir şey sorulursa ya da kesin fiyat/rezervasyon istenirse: "Detay ve rezervasyon için 0537 266 0634 numarasından bilgi alabilirsiniz" de.
+- ASLA "sizi müşteri temsilcisine/temsilciye aktarıyorum" gibi ifadeler kullanma.
+- Sağlık iddiası/tedavi vaadi yapma.
+- Emojiyi ölçülü kullan.`;
 
-// Basit konuşma hafızası: telefon numarası -> mesaj geçmişi (Gemini "contents" formatı).
-// NOT: Bellekte tutulur, sunucu yeniden başlayınca sıfırlanır.
-// İleride kalıcılık için veritabanına (Postgres/SQLite) taşınabilir.
+// Basit konuşma hafızası (telefon -> geçmiş). Bellekte; restart'ta sıfırlanır.
 const conversations = new Map();
-const MAX_TURNS = 12; // son ~12 tur (kullanıcı+asistan) saklanır
+const MAX_TURNS = 10;
 
 export async function generateReply(from, userText, name) {
   const history = conversations.get(from) ?? [];
@@ -42,41 +38,17 @@ export async function generateReply(from, userText, name) {
       config: {
         systemInstruction: SYSTEM_PROMPT,
         maxOutputTokens: 1024,
-        // WhatsApp cevapları için hız/maliyet: "düşünme" kapalı.
-        // Daha zor sorularda kaliteyi artırmak istersen budget'ı yükselt veya bu satırı sil.
         thinkingConfig: { thinkingBudget: 0 },
       },
     });
     reply = res.text ?? "";
   } catch (err) {
     console.error("Gemini hatası:", err?.message ?? err);
-    // Hafızayı bozmamak için bu turu geri al
     history.pop();
     return "Şu an küçük bir teknik aksaklık var, birazdan tekrar yazabilir misiniz? 🙏";
   }
 
   history.push({ role: "model", parts: [{ text: reply }] });
-  // Geçmişi sınırla (en son MAX_TURNS*2 mesaj)
   conversations.set(from, history.slice(-MAX_TURNS * 2));
-
-  // Temsilciye aktarma kontrolü
-  let handoff = false;
-  if (reply.includes(HANDOFF_TAG)) {
-    reply = reply.split(HANDOFF_TAG).join("").trim();
-    handoff = true;
-    console.log(`🔔 TEMSİLCİYE AKTARMA — ${name ?? "müşteri"} (${from})`);
-  }
-
-  const finalReply = reply || "Mesajınızı aldım, size yardımcı olmaktan memnuniyet duyarım. 🙂";
-
-  // Görüşmeyi Google Sheet'e kaydet; aktarma varsa e-posta tetiklenir (Apps Script tarafında)
-  logConversation({
-    numara: from,
-    isim: name ?? "",
-    mesaj: userText,
-    cevap: finalReply,
-    aktarma: handoff,
-  });
-
-  return finalReply;
+  return reply || "Size nasıl yardımcı olabilirim? 🙂";
 }
