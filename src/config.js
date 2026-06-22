@@ -25,7 +25,7 @@ export const CONFIG = {
 
   // Gemini (Google)
   geminiApiKey: read("GEMINI_API_KEY"),
-  model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+  model: process.env.GEMINI_MODEL || "gemini-2.5-flash-lite",
 
   // Otel
   hotelName: process.env.HOTEL_NAME || "Otelimiz",
