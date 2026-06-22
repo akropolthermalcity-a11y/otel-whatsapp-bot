@@ -20,11 +20,10 @@ export const HOTEL_INFO = `
 - **Diğer şehirler (İzmir, Bursa, Kocaeli, Sakarya, Eskişehir, Konya, Kayseri vb.):** Genelde Ankara aktarmalı; güncel sefer için otobüs firmalarından bilgi alınmalı.
 
 ## ODA TİPLERİ (daireler — aile konaklamasına uygun)
-- **1+1 Daire:** 4 yetişkin + 1 çocuk
-- **2+1 Daire:** 6 yetişkin + 1 çocuk
-- **3+1 Daire:** 8 yetişkin + 2 çocuk
-- Dairelerde buzdolabı, elektrikli ocak ve temel mutfak ekipmanları var.
-- Odalarda termal su YOK (termal ortak alanlarda). Odalarda internet YOK (internet ortak alanlarda).
+- **1+1 Daire:** 3 yetişkin + 1 çocuk. Kapasite talebe göre **iletişimle artırılabilir**; daha kalabalık aileler için 0537 266 0634'ten bilgi alınmalı.
+- Müşteriye 2+1/3+1 gibi tipleri proaktif sayma; "1+1 (3 yetişkin 1 çocuk), kapasite iletişimle artırılabilir" şeklinde anlat.
+- Dairelerde buzdolabı, elektrikli ocak ve temel mutfak ekipmanları var; ferah ve konforlu.
+- Odalarda termal su YOK (termal ortak alanlarda). İnternet ortak alanlarda. İlave yatak talep halinde ek ücretle.
 
 ## HAVUZLAR & TERMAL
 - **Erkekler bölümü:** Yarı olimpik kapalı havuz, termal havuz, sauna, Türk hamamı.

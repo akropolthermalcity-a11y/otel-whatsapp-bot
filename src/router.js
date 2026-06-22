@@ -1,5 +1,5 @@
-// Menü + numara akışı + çok adımlı başvuru formları.
-// Numara seçimleri Gemini kotası harcamaz (sabit metin). Serbest metin -> AI.
+// Menü + numara akışı + adım adım (anket) başvuru formları.
+// Numara/menü seçimleri Gemini kotası harcamaz (sabit metin). Serbest metin -> AI.
 import { generateReply } from "./ai.js";
 import { logConversation } from "./logger.js";
 
@@ -22,21 +22,34 @@ Lütfen ilgili numarayı gönderiniz.`;
 
 // Bilgi bölümleri (2-7)
 const SECTIONS = {
-  "2": `🌿 *Akropol Termal Şehir*
+  "2": `🌿 *Akropol Termal Şehir Hakkında*
 
-Ankara'nın Beypazarı ilçesinde, aile odaklı termal tatil ve yaşam kompleksi. Termal sağlık, konforlu konaklama, eğlence ve sosyal yaşamı bir arada sunar.
+Ankara'nın Beypazarı ilçesinde yer alan, *aile odaklı* termal tatil ve yaşam kompleksi. Misafirlerine termal sağlık, konforlu konaklama, eğlence ve sosyal yaşamı bir arada sunar.
 
-Termal su mineral bakımından zengindir; dinlenme ve rahatlamaya yardımcı olur. (Sağlık sorununuz varsa termal kullanımdan önce doktorunuza danışmanızı öneririz.)`,
+• *Termal:* Kadın ve erkek bölümlerinde kapalı havuz, termal havuz, sauna ve Türk hamamı; ortak alanlarda açık havuz, Aquapark ve termal havuzlar.
+• *Sosyal:* Fitness, spa, çocuk oyun parkları, kafe, restoran, market.
+• *Eğlence:* Gün boyu animasyon, akşam eğlenceleri, canlı müzik, çocuk ve aile aktiviteleri.
+• *Konum:* Beypazarı merkeze ~5 km, Ankara'ya ~90 km. Ücretsiz otopark.
+
+Termal su mineral bakımından zengindir; dinlenme ve rahatlamaya yardımcı olur. (Sağlık sorununuz varsa termal kullanımdan önce doktorunuza danışmanızı öneririz.)
+
+Huzurlu atmosferi ve aile konseptiyle öne çıkar. 🌿`,
 
   "3": `🏠 *Oda ve Konaklama*
 
-• *1+1 Daire:* 4 yetişkin + 1 çocuk
-• *2+1 Daire:* 6 yetişkin + 1 çocuk
-• *3+1 Daire:* 8 yetişkin + 2 çocuk
+• *1+1 Daire:* 3 yetişkin + 1 çocuk
+  (Kapasite talebe göre iletişimle artırılabilir — daha kalabalık aileler için bizimle iletişime geçebilirsiniz.)
 
-Dairelerde buzdolabı, elektrikli ocak ve temel mutfak ekipmanı bulunur.
+Dairelerimiz aile konaklamasına uygun, ferah ve konforlu şekilde tasarlanmıştır:
+• Buzdolabı, elektrikli ocak ve temel mutfak ekipmanları
 • Giriş (check-in): 14:00 • Çıkış (check-out): 11:00
-• Ücretsiz otopark • Wifi ortak alanlarda • Evcil hayvan kabul edilmez`,
+• Talep halinde ek ücretle ilave yatak
+• Ücretsiz otopark
+• Wifi/internet ortak kullanım alanlarında
+• Termal kullanım ortak alanlarda sunulur
+• Evcil hayvan kabul edilmez
+
+Uygun daire ve detaylar için: 📞 0537 266 0634`,
 
   "4": `🏊 *Havuzlar, Termal & Sosyal*
 
@@ -68,81 +81,65 @@ Tarihi Osmanlı evleri, doğal güzellikleri ve yöresel lezzetleriyle ünlü bi
 
 Merak ettiğiniz soruyu doğrudan yazabilirsiniz, hemen yanıtlayalım 🙂
 
-Örnekler: "check-in saati", "evcil hayvan kabul ediliyor mu", "otopark ücretli mi", "yemek dahil mi", "devre tatil / RCI nedir", "spa ücretli mi"`,
+Örnekler: "check-in saati", "evcil hayvan kabul ediliyor mu", "otopark ücretli mi", "yemek dahil mi", "spa ücretli mi", "aquapark ne zaman açık"`,
 };
 
-// Hediye Tatil başvuru akışı (1)
-const HEDIYE_FORM1 = `🎁 *Hediye Tatil Ön Değerlendirme*
-
-Size yardımcı olabilmemiz için aşağıdaki bilgileri paylaşabilir misiniz?
-
-• Ad Soyad
-• Yaşınız
-• Medeni Durumunuz (Evli / Bekar)
-• Yaşadığınız İl
-• Daha önce Akropol Termal'de konakladınız mı? (Evet / Hayır)
-
-*Örnek:*
-Ad Soyad: Ahmet Yılmaz
-Yaş: 38
-Medeni Durum: Evli
-İl: İstanbul
-Daha Önce Konaklama: Hayır`;
-
-const HEDIYE_FORM2 = `Teşekkür ederiz. 🙂
-
-Ön değerlendirmeye göre hediye tatil kampanyamız için uygun görünüyorsunuz. 🎉
-
-Son değerlendirme için aşağıdaki bilgileri paylaşabilir misiniz?
-
-• Ad Soyad
-• Telefon Numarası
-• Tatile katılacak kişi sayısı
-• Tercih ettiğiniz tarih aralığı`;
-
-const HEDIYE_DONE = `Bilgileriniz alınmıştır. ✅
+// Adım adım anket akışları (her mesaj sıradaki sorunun cevabı olur)
+const SURVEYS = {
+  hediye: {
+    title: "🎁 HEDİYE TATİL BAŞVURU",
+    questions: [
+      { key: "Ad Soyad", soru: `🎁 *Hediye Tatil Ön Değerlendirme*\n\nBirkaç kısa soruyla başlayalım.\n\nAdınız ve soyadınız?` },
+      { key: "Yaş", soru: `Yaşınız kaç?` },
+      { key: "Medeni Durum", soru: `Medeni durumunuz nedir? (Evli / Bekar)` },
+      { key: "İl", soru: `Hangi ilde yaşıyorsunuz?` },
+      { key: "Daha Önce Konaklama", soru: `Daha önce Akropol Termal'de konakladınız mı? (Evet / Hayır)` },
+      { key: "Telefon", soru: `Teşekkürler 🙂\n\nÖn değerlendirmeye göre hediye tatil kampanyamız için *uygun görünüyorsunuz.* 🎉\n\nSon değerlendirme için birkaç bilgi daha alalım.\n\nTelefon numaranız?` },
+      { key: "Kişi Sayısı", soru: `Tatile kaç kişi katılacak? (kaç yetişkin / kaç çocuk)` },
+      { key: "Tarih Aralığı", soru: `Son olarak, tercih ettiğiniz tarih aralığı nedir?` },
+    ],
+    done: `Bilgileriniz alınmıştır. ✅
 
 Talebiniz ilgili birimimize iletilmiştir. Uygunluk ve rezervasyon değerlendirmesi sonrasında müşteri temsilcimiz sizinle iletişime geçecektir.
 
 İlginiz için teşekkür ederiz.
-*Beypazarı İncisi*`;
-
-// Rezervasyon akışı (8)
-const RESV_FORM = `📅 *Rezervasyon Talebi*
-
-Lütfen aşağıdaki bilgileri tek mesajda yazınız:
-
-• Ad Soyad
-• Telefon Numarası
-• Konaklamak istediğiniz tarih aralığı
-• Kişi sayısı (yetişkin / çocuk)`;
-
-const RESV_DONE = `Talebiniz alınmıştır. ✅
+*Beypazarı İncisi*`,
+  },
+  rezervasyon: {
+    title: "📅 REZERVASYON TALEBİ",
+    questions: [
+      { key: "Ad Soyad", soru: `📅 *Rezervasyon Talebi*\n\nBirkaç bilgi alalım.\n\nAdınız ve soyadınız?` },
+      { key: "Telefon", soru: `Telefon numaranız?` },
+      { key: "Tarih Aralığı", soru: `Konaklamak istediğiniz tarih aralığı?` },
+      { key: "Kişi Sayısı", soru: `Kaç kişi olacaksınız? (yetişkin / çocuk)` },
+    ],
+    done: `Talebiniz alınmıştır. ✅
 
 Talebiniz ilgili birimimize iletildi; müşteri temsilcimiz en kısa sürede sizinle iletişime geçecektir.
 
 Teşekkür ederiz.
-*Beypazarı İncisi*`;
+*Beypazarı İncisi*`,
+  },
+};
 
 const FOOTER = `\n\n_Menü için 0 yazın._`;
 
 const states = new Map(); // from -> { flow, step, data }
 const seen = new Set();
 
-// Mesajın tek başına bir menü numarası (1-8) olup olmadığını anlar ("1️⃣", "1.", " 1 " hepsi olur)
+// Mesaj tek başına bir menü numarası mı (1-8)? "1️⃣", "1.", " 1 " hepsi olur.
 function menuDigit(t) {
   const c = t.replace(/[️⃣.\s)]/g, "");
   return /^[1-8]$/.test(c) ? c : null;
 }
-
 function isGreeting(l) {
-  return /^(merhaba|merhabalar|selam|selamlar|slm|menü|menu|başla|basla|iyi günler|iyi gunler|günaydın|gunaydin|iyi akşamlar|iyi aksamlar|hello|hi|0)$/.test(
-    l.trim()
-  );
+  return /^(merhaba|merhabalar|selam|selamlar|slm|menü|menu|başla|basla|iyi günler|iyi gunler|günaydın|gunaydin|iyi akşamlar|iyi aksamlar|hello|hi|0)$/.test(l.trim());
 }
-
 function isCancel(l) {
   return /^(iptal|vazgeç|vazgec|çıkış|cikis|geri)$/.test(l.trim());
+}
+function formatData(data) {
+  return Object.entries(data).map(([k, v]) => `${k}: ${v}`).join("\n");
 }
 
 export async function handleMessage(from, text, name) {
@@ -155,40 +152,34 @@ export async function handleMessage(from, text, name) {
   let lead = false; // e-posta + Sheet'te "talep" olarak işaretle
   let logMsg = t;
 
-  // 1) Aktif bir akış varsa (ve kullanıcı tek başına menü numarası göndermediyse) akışı ilerlet
-  if (st && !d) {
+  // 1) Aktif bir anket varsa: her mesaj sıradaki sorunun cevabıdır (tek haneli sayı dahil)
+  if (st) {
     if (isGreeting(lower) || isCancel(lower)) {
       states.delete(from);
       reply = MENU;
-    } else if (st.flow === "hediye" && st.step === 1) {
-      st.data.on = t;
-      st.step = 2;
-      states.set(from, st);
-      reply = HEDIYE_FORM2;
-    } else if (st.flow === "hediye" && st.step === 2) {
-      states.delete(from);
-      reply = HEDIYE_DONE;
-      lead = true;
-      logMsg = `🎁 HEDİYE TATİL BAŞVURU\n— Ön değerlendirme: ${st.data.on}\n— Son değerlendirme: ${t}`;
-    } else if (st.flow === "rezervasyon" && st.step === 1) {
-      states.delete(from);
-      reply = RESV_DONE;
-      lead = true;
-      logMsg = `📅 REZERVASYON TALEBİ\n${t}`;
     } else {
-      states.delete(from);
-      reply = MENU;
+      const sv = SURVEYS[st.flow];
+      sv.questions[st.step] && (st.data[sv.questions[st.step].key] = t);
+      st.step++;
+      if (st.step < sv.questions.length) {
+        states.set(from, st);
+        reply = sv.questions[st.step].soru;
+      } else {
+        states.delete(from);
+        reply = sv.done;
+        lead = true;
+        logMsg = `${sv.title}\n${formatData(st.data)}`;
+      }
     }
   }
   // 2) Menü numarası seçimi
   else if (d === "1") {
-    states.set(from, { flow: "hediye", step: 1, data: {} });
-    reply = HEDIYE_FORM1;
+    states.set(from, { flow: "hediye", step: 0, data: {} });
+    reply = SURVEYS.hediye.questions[0].soru;
   } else if (d === "8") {
-    states.set(from, { flow: "rezervasyon", step: 1, data: {} });
-    reply = RESV_FORM;
+    states.set(from, { flow: "rezervasyon", step: 0, data: {} });
+    reply = SURVEYS.rezervasyon.questions[0].soru;
   } else if (d && SECTIONS[d]) {
-    states.delete(from);
     reply = SECTIONS[d] + FOOTER;
   }
   // 3) İlk temas / karşılama -> menü
