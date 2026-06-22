@@ -3,6 +3,7 @@ import express from "express";
 import { CONFIG } from "./config.js";
 import { extractIncomingMessages, markAsRead, sendText } from "./whatsapp.js";
 import { handleMessage } from "./router.js";
+import { fetchRows, renderPanel } from "./panel.js";
 
 const app = express();
 app.use(express.json());
@@ -46,6 +47,27 @@ app.post("/webhook", async (req, res) => {
 
 // Basit sağlık kontrolü
 app.get("/", (_req, res) => res.send("Otel Rezervasyon Bot çalışıyor ✅"));
+
+// Yönetim paneli: /panel?k=ANAHTAR
+app.get("/panel", async (req, res) => {
+  if (!CONFIG.panelKey || req.query.k !== CONFIG.panelKey) {
+    return res
+      .status(401)
+      .send(
+        '<html><body style="font-family:sans-serif;background:#0f1720;color:#e7edf3;text-align:center;padding:60px">' +
+          "<h2>🔒 Erişim anahtarı gerekli</h2><p>Panele erişmek için doğru bağlantıyı (anahtarlı) kullanın.</p></body></html>"
+      );
+  }
+  try {
+    const rows = await fetchRows();
+    res.send(renderPanel(rows));
+  } catch (err) {
+    console.error("Panel hatası:", err?.message ?? err);
+    res
+      .status(500)
+      .send("Panel verisi alınamadı. Birazdan tekrar deneyin. (" + (err?.message ?? "hata") + ")");
+  }
+});
 
 app.listen(CONFIG.port, () => {
   console.log(`🚀 Bot ${CONFIG.port} portunda dinliyor`);
