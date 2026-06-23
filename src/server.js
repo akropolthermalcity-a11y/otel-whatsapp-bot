@@ -1,12 +1,34 @@
 // Giriş noktası: WhatsApp webhook sunucusu.
 import express from "express";
+import crypto from "node:crypto";
 import { CONFIG } from "./config.js";
 import { extractIncomingMessages, markAsRead, sendText } from "./whatsapp.js";
 import { handleMessage } from "./router.js";
-import { fetchRows, renderPanel } from "./panel.js";
+import { fetchRows, renderPanel, renderLogin } from "./panel.js";
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: false })); // panel giriş formu için
+
+// Panel oturum çerezi: şifreden türetilmiş sabit jeton (şifre değişirse jeton da değişir)
+function panelToken() {
+  return crypto
+    .createHash("sha256")
+    .update(`${CONFIG.panelUser}:${CONFIG.panelPass}:akropol-panel-v1`)
+    .digest("hex");
+}
+function getCookie(req, name) {
+  const raw = req.headers.cookie || "";
+  for (const part of raw.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq === -1) continue;
+    if (part.slice(0, eq).trim() === name) return part.slice(eq + 1).trim();
+  }
+  return "";
+}
+function isPanelLoggedIn(req) {
+  return Boolean(CONFIG.panelUser) && getCookie(req, "panel_auth") === panelToken();
+}
 
 // 1) Webhook DOĞRULAMA — Meta panelinden webhook bağlarken bir kez çağrılır.
 app.get("/webhook", (req, res) => {
@@ -48,22 +70,36 @@ app.post("/webhook", async (req, res) => {
 // Basit sağlık kontrolü
 app.get("/", (_req, res) => res.send("Otel Rezervasyon Bot çalışıyor ✅"));
 
-// Yönetim paneli: kullanıcı adı + şifre ile giriş (tarayıcı penceresi)
+// Panel giriş formu gönderimi
+app.post("/panel/login", (req, res) => {
+  if (!CONFIG.panelUser || !CONFIG.panelPass) {
+    return res.status(503).send("Panel henüz yapılandırılmadı.");
+  }
+  const { user, pass } = req.body || {};
+  if (user === CONFIG.panelUser && pass === CONFIG.panelPass) {
+    // 30 gün geçerli oturum çerezi
+    res.set(
+      "Set-Cookie",
+      `panel_auth=${panelToken()}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`
+    );
+    return res.redirect("/panel");
+  }
+  return res.redirect("/panel?e=1");
+});
+
+// Panel çıkış
+app.get("/panel/logout", (_req, res) => {
+  res.set("Set-Cookie", "panel_auth=; Path=/; HttpOnly; Max-Age=0");
+  res.redirect("/panel");
+});
+
+// Yönetim paneli (oturum çereziyle korumalı; çerez yoksa giriş sayfası)
 app.get("/panel", async (req, res) => {
-  // Şifre ayarlı değilse paneli kilitle
   if (!CONFIG.panelUser || !CONFIG.panelPass) {
     return res.status(503).send("Panel henüz yapılandırılmadı (kullanıcı adı/şifre tanımlı değil).");
   }
-  // HTTP Basic Auth kontrolü
-  const hdr = req.headers.authorization || "";
-  let ok = false;
-  if (hdr.startsWith("Basic ")) {
-    const [u, p] = Buffer.from(hdr.slice(6), "base64").toString("utf8").split(":");
-    ok = u === CONFIG.panelUser && p === CONFIG.panelPass;
-  }
-  if (!ok) {
-    res.set("WWW-Authenticate", 'Basic realm="Akropol Bot Paneli", charset="UTF-8"');
-    return res.status(401).send("Giriş gerekli.");
+  if (!isPanelLoggedIn(req)) {
+    return res.send(renderLogin(req.query.e === "1"));
   }
   try {
     const rows = await fetchRows();

@@ -10,6 +10,49 @@ export async function fetchRows() {
   return Array.isArray(data.rows) ? data.rows : [];
 }
 
+// Giriş sayfası (tarayıcı popup'ı yerine düzgün form)
+export function renderLogin(error) {
+  return `<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Akropol Bot Paneli — Giriş</title>
+<style>
+  :root{--bg:#0f1720;--card:#1b2733;--accent:#16a34a;--text:#e7edf3;--muted:#93a4b3;--line:#27333f;--err:#ef4444}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);padding:20px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px 24px;width:100%;max-width:360px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
+  input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);
+    background:#0f1720;color:var(--text);font-size:15px;outline:none}
+  input:focus{border-color:var(--accent)}
+  button{width:100%;margin-top:20px;padding:12px;border:0;border-radius:10px;background:var(--accent);
+    color:#06210f;font-weight:700;font-size:15px;cursor:pointer}
+  .err{background:rgba(239,68,68,.12);border:1px solid var(--err);color:#fca5a5;
+    padding:10px 12px;border-radius:10px;font-size:13px;margin-bottom:8px}
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>🌿 Akropol Bot Paneli</h1>
+    <p class="sub">Devam etmek için giriş yapın</p>
+    ${error ? '<div class="err">Kullanıcı adı veya şifre hatalı</div>' : ""}
+    <form method="POST" action="/panel/login">
+      <label for="user">Kullanıcı adı</label>
+      <input id="user" name="user" autocomplete="username" autofocus required>
+      <label for="pass">Şifre</label>
+      <input id="pass" name="pass" type="password" autocomplete="current-password" required>
+      <button type="submit">Giriş yap</button>
+    </form>
+  </div>
+</body>
+</html>`;
+}
+
 export function renderPanel(rows) {
   const json = JSON.stringify(rows).replace(/</g, "\\u003c");
   return `<!doctype html>
@@ -49,7 +92,7 @@ export function renderPanel(rows) {
 <body>
 <header>
   <div><h1>🌿 Akropol Bot Paneli</h1><div class="sub">Beypazarı İncisi · WhatsApp görüşmeleri & talepleri</div></div>
-  <div class="sub" id="updated"></div>
+  <div class="sub"><span id="updated"></span> · <a href="/panel/logout" style="color:#93a4b3">Çıkış</a></div>
 </header>
 <div class="wrap">
   <div class="cards">
