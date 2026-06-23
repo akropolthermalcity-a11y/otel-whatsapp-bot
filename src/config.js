@@ -33,6 +33,10 @@ export const CONFIG = {
   // Görüşme kaydı + e-posta bildirimi (Google Apps Script Web App URL'i)
   logWebhookUrl: process.env.LOG_WEBHOOK_URL || "",
 
-  // Yönetim paneli erişim anahtarı (/panel?k=...). Apps Script'teki PANEL_KEY ile aynı olmalı.
+  // Apps Script doGet anahtarı (botun Sheet'i okuması için; kullanıcıya görünmez).
   panelKey: process.env.PANEL_KEY || "",
+
+  // Panele giriş için kullanıcı adı + şifre (tarayıcı giriş penceresi).
+  panelUser: process.env.PANEL_USER || "",
+  panelPass: process.env.PANEL_PASS || "",
 };

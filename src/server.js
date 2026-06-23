@@ -48,15 +48,22 @@ app.post("/webhook", async (req, res) => {
 // Basit sağlık kontrolü
 app.get("/", (_req, res) => res.send("Otel Rezervasyon Bot çalışıyor ✅"));
 
-// Yönetim paneli: /panel?k=ANAHTAR
+// Yönetim paneli: kullanıcı adı + şifre ile giriş (tarayıcı penceresi)
 app.get("/panel", async (req, res) => {
-  if (!CONFIG.panelKey || req.query.k !== CONFIG.panelKey) {
-    return res
-      .status(401)
-      .send(
-        '<html><body style="font-family:sans-serif;background:#0f1720;color:#e7edf3;text-align:center;padding:60px">' +
-          "<h2>🔒 Erişim anahtarı gerekli</h2><p>Panele erişmek için doğru bağlantıyı (anahtarlı) kullanın.</p></body></html>"
-      );
+  // Şifre ayarlı değilse paneli kilitle
+  if (!CONFIG.panelUser || !CONFIG.panelPass) {
+    return res.status(503).send("Panel henüz yapılandırılmadı (kullanıcı adı/şifre tanımlı değil).");
+  }
+  // HTTP Basic Auth kontrolü
+  const hdr = req.headers.authorization || "";
+  let ok = false;
+  if (hdr.startsWith("Basic ")) {
+    const [u, p] = Buffer.from(hdr.slice(6), "base64").toString("utf8").split(":");
+    ok = u === CONFIG.panelUser && p === CONFIG.panelPass;
+  }
+  if (!ok) {
+    res.set("WWW-Authenticate", 'Basic realm="Akropol Bot Paneli", charset="UTF-8"');
+    return res.status(401).send("Giriş gerekli.");
   }
   try {
     const rows = await fetchRows();
