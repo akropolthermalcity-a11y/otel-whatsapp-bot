@@ -23,7 +23,7 @@ export function renderLogin(error) {
   return `<!doctype html>
 <html lang="tr"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Akropol Bot Paneli — Giriş</title>
+<title>Beypazarı İncisi — Giriş</title>
 <style>${BASE_CSS}
   body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
   .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px 24px;width:100%;max-width:360px}
@@ -35,8 +35,8 @@ export function renderLogin(error) {
   .err{background:rgba(239,68,68,.12);border:1px solid var(--err);color:#fca5a5;padding:10px 12px;border-radius:10px;font-size:13px;margin-bottom:8px}
 </style></head><body>
   <div class="box">
-    <h1>🌿 Akropol Bot Paneli</h1>
-    <p class="sub">Devam etmek için giriş yapın</p>
+    <h1>🌿 Beypazarı İncisi</h1>
+    <p class="sub">Panele devam etmek için giriş yapın</p>
     ${error ? '<div class="err">Kullanıcı adı veya şifre hatalı</div>' : ""}
     <form method="POST" action="/panel/login">
       <label for="user">Kullanıcı adı</label>
@@ -61,7 +61,7 @@ export function renderChangePass(errCode) {
   return `<!doctype html>
 <html lang="tr"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Şifre Değiştir — Akropol Bot Paneli</title>
+<title>Şifre Değiştir — Beypazarı İncisi</title>
 <style>${BASE_CSS}
   body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
   .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px 24px;width:100%;max-width:380px}
@@ -97,7 +97,7 @@ export function renderPanel(rows) {
   return `<!doctype html>
 <html lang="tr"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Akropol Bot Paneli</title>
+<title>Beypazarı İncisi Panel</title>
 <style>${BASE_CSS}
   .app{display:flex;min-height:100vh}
   .side{width:230px;flex-shrink:0;background:var(--card2);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:16px 12px}
@@ -167,7 +167,7 @@ export function renderPanel(rows) {
 </style></head><body>
 <div class="app">
   <aside class="side">
-    <div class="brand">🌿 Akropol <span>Bot Paneli</span></div>
+    <div class="brand">🌿 Beypazarı <span>İncisi</span></div>
     <nav>
       <a data-v="overview" class="active">📊 Genel Bakış</a>
       <a data-v="customers">👥 Müşteriler</a>
