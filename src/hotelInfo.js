@@ -39,6 +39,7 @@ export const HOTEL_INFO = `
 
 ## OLANAKLAR (kısa)
 - Otopark: **ücretsiz**. Market: **var**. Restoran: **var**.
+- **Mescit / ibadet alanı: VAR** — tesiste namaz kılınabilecek mescit bulunur. (Müşteri "cami/mescit var mı" diye sorarsa: "Evet, tesisimizde mescit bulunmaktadır" de.)
 - Temizlik hizmeti: var. Wifi/internet: ortak alanlarda var, odalarda yok.
 - Havlu verilmez — misafirin kişisel kullanım ürünlerini getirmesi tavsiye edilir.
 - İlave yatak: talep halinde **ek ücretle** temin edilebilir.
