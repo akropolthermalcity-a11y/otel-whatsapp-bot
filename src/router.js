@@ -161,6 +161,8 @@ function formatData(data) {
 function photoCategory(l) {
   if (!/(foto|fotoğraf|fotograf|resim|görsel|gorsel|görebilir|gorebilir|göster|goster|göndere?bil|gondere?bil)/.test(l))
     return null;
+  if (/oyun alan|oyun park|playground|top havuz|[çc]ocuk (kul[üu]b|aktivite|oyun|alan|park)|[çc]ocuklar i[çc]in/.test(l))
+    return "cocuk";
   if (/oda|daire|s[uü]it|konaklama/.test(l)) return "oda";
   if (/havuz|aquapark/.test(l)) return "havuz";
   if (/termal|sauna|hamam|kapl[ıi]ca|spa/.test(l)) return "termal";

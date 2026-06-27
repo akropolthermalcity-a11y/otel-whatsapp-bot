@@ -12,7 +12,8 @@ const PUBLIC_BASE = (process.env.PUBLIC_BASE_URL || "https://otel-whatsapp-bot.o
 const CATS = [
   { key: "oda", prefix: /^oda/i, caption: "🏠 Odalarımızdan kareler" },
   { key: "havuz", prefix: /^havuz/i, caption: "🏊 Havuz & Aquapark" },
-  { key: "termal", prefix: /^termal/i, caption: "♨️ Termal alanlarımız" },
+  { key: "termal", prefix: /^termal/i, caption: "♨️ Termal & spa alanlarımız" },
+  { key: "cocuk", prefix: /^cocuk/i, caption: "🎠 Çocuk oyun alanı & aktiviteler" },
   { key: "dis", prefix: /^(cevre|dis)/i, caption: "🌿 Tesis & çevre" },
   { key: "genel", prefix: /^genel/i, caption: "📷 Akropol Termal Şehir" },
 ];
