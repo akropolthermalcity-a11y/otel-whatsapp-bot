@@ -85,28 +85,49 @@ Merak ettiğiniz soruyu doğrudan yazabilirsiniz, hemen yanıtlayalım 🙂
 Örnekler: "check-in saati", "evcil hayvan kabul ediliyor mu", "otopark ücretli mi", "yemek dahil mi", "spa ücretli mi", "aquapark ne zaman açık"`,
 };
 
-// Adım adım anket akışları (her mesaj sıradaki sorunun cevabı olur)
+// ---- HEDİYE TATİL: önce bilgi + onay, sonra TEK mesajda form, sonra kurumsal onay ----
+const HEDIYE_INFO = `🎁 *Hediye Tatil Programımız*
+
+Sizi Akropol Termal Şehir'de *2 gece 3 gün* ağırlamaktan mutluluk duyarız 🌿
+
+• Tesis tanıtımımız kapsamında konaklama *ücretsizdir*.
+• Program boyunca yaklaşık *2 saatlik* tanıtım sunumumuza katılım beklenir (satın alma zorunluluğu yoktur).
+• Girişte oda/envanter için *500 TL depozito* alınır, çıkışta *eksiksiz iade* edilir.
+• Yemek, ulaşım ve yakıt programa dahil değildir.
+• *Katılım koşulları:* evli ve aile olarak gelmek, 30 yaş ve üzeri olmak, daha önce Akropol Termal'de konaklamamış olmak.`;
+
+// Bilgi mesajının sonuna eklenen onay sorusu
+const HEDIYE_CONSENT = `\n\nDilerseniz başvurunuzu hemen alabilirim 🙂 *Hediye tatil başvuru formunu* doldurmak ister misiniz? (Evet / Hayır)`;
+
+// "Evet" denince tek mesajda gönderilen form
+const HEDIYE_FORM = `🎁 *Hediye Tatil Başvuru Formu*
+
+Aşağıdaki bilgileri *tek mesajda* yazıp gönderebilirsiniz:
+
+1️⃣ Ad Soyad
+2️⃣ Yaş
+3️⃣ Medeni durum (Evli / Bekar)
+4️⃣ Yaşadığınız il
+5️⃣ Daha önce Akropol Termal'de konakladınız mı? (Evet / Hayır)
+6️⃣ Telefon numaranız
+7️⃣ Tatile kaç kişi katılacak? (kaç yetişkin / kaç çocuk)
+8️⃣ Tercih ettiğiniz tarih aralığı
+
+Bilgilerinizi gönderdiğinizde başvurunuzu hemen alacağım 🙂`;
+
+// Form yanıtı gelince kurumsal onay
+const HEDIYE_DONE = `Başvurunuz tarafımıza ulaşmıştır. ✅
+
+Talebiniz değerlendirme birimimize iletilmiştir; uygunluk ve müsaitlik değerlendirmesinin ardından müşteri temsilcimiz en kısa sürede sizinle iletişime geçecektir.
+
+İlginiz için teşekkür eder, iyi günler dileriz.
+*İnci · Beypazarı İncisi* 🌿`;
+
+// "Hayır" yanıtı
+const HEDIYE_NO = `Tabii, anlıyorum 🙂 Dilediğiniz an hediye tatil başvurusu için bana yazabilir ya da 0537 266 0634 numaramızdan bize ulaşabilirsiniz.`;
+
+// Adım adım anket akışı (yalnızca rezervasyon; her mesaj sıradaki sorunun cevabı olur)
 const SURVEYS = {
-  hediye: {
-    title: "🎁 HEDİYE TATİL BAŞVURU",
-    questions: [
-      { key: "Ad Soyad", soru: `🎁 *Hediye Tatil Ön Değerlendirme*\n\nBirkaç kısa soruyla başlayalım.\n\nAdınız ve soyadınız?` },
-      { key: "Yaş", soru: `Yaşınız kaç?` },
-      { key: "Medeni Durum", soru: `Medeni durumunuz nedir? (Evli / Bekar)` },
-      { key: "İl", soru: `Hangi ilde yaşıyorsunuz?` },
-      { key: "Daha Önce Konaklama", soru: `Daha önce Akropol Termal'de konakladınız mı? (Evet / Hayır)` },
-      { key: "Telefon", soru: `Teşekkürler 🙂\n\nÖn değerlendirmeye göre hediye tatil kampanyamız için *uygun görünüyorsunuz.* 🎉\n\nSon değerlendirme için birkaç bilgi daha alalım.\n\nTelefon numaranız?` },
-      { key: "Kişi Sayısı", soru: `Tatile kaç kişi katılacak? (kaç yetişkin / kaç çocuk)` },
-      { key: "Tarih Aralığı", soru: `Son olarak, tercih ettiğiniz tarih aralığı nedir?` },
-    ],
-    done: `Bilgileriniz alınmıştır. ✅
-
-Talebiniz ilgili birimimize iletilmiştir. Uygunluk ve rezervasyon değerlendirmesi sonrasında müşteri temsilcimiz sizinle iletişime geçecektir.
-
-İlginiz için teşekkür ederiz.
-Sevgiler,
-*İnci · Beypazarı İncisi* 🌿`,
-  },
   rezervasyon: {
     title: "📅 REZERVASYON TALEBİ",
     questions: [
@@ -140,6 +161,16 @@ function isGreeting(l) {
 }
 function isCancel(l) {
   return /^(iptal|vazgeç|vazgec|çıkış|cikis|geri)$/.test(l.trim());
+}
+// Olumsuz yanıt mı? (önce buna bakılır)
+function isNegative(l) {
+  return /(hay[ıi]r|istemiyorum|istemem|gerek yok|olmaz|vazge[çc]|ilgilenmiyorum|^yok$|[şs]imdilik (yok|hay[ıi]r|olmaz|de[ğg]il))/.test(l.trim());
+}
+// Olumlu yanıt mı? (onay)
+function isPositive(l) {
+  const s = l.trim();
+  if (isNegative(s)) return false;
+  return /(evet|evt|^e$|olur|olsun|tabi+|tamam|tmm|^ok$|okey|peki|isterim|istiyorum|kesinlikle|ba[şs]vur|kat[ıi]l|memnuniyetle|hayhay|👍|✅|👌)/.test(s);
 }
 // Serbest metinde "hediye tatile katılmak/kullanmak/başvurmak istiyorum" gibi NİYET var mı?
 // Salt bilgi sorusu (nedir, şartları, hakkında) ankete sokulmaz.
@@ -181,12 +212,42 @@ export async function handleMessage(from, text, name) {
   let lead = false; // e-posta + Sheet'te "talep" olarak işaretle
   let logMsg = t;
 
-  // 1) Aktif bir anket varsa: her mesaj sıradaki sorunun cevabıdır (tek haneli sayı dahil)
+  // 1) Aktif bir akış varsa
   if (st) {
     if (isGreeting(lower) || isCancel(lower)) {
       states.delete(from);
       reply = MENU;
-    } else {
+    }
+    // 1a) Hediye: bilgi sonrası onay bekleniyor
+    else if (st.flow === "hediye_consent") {
+      if (isNegative(lower)) {
+        states.delete(from);
+        reply = HEDIYE_NO + FOOTER;
+      } else if (isPositive(lower)) {
+        states.set(from, { flow: "hediye_form" });
+        reply = HEDIYE_FORM;
+      } else {
+        // Soru sormuş -> AI ile yanıtla, sonra onayı tekrar sor (akış devam)
+        reply = (await generateReply(from, t, name)) + HEDIYE_CONSENT;
+      }
+    }
+    // 1b) Hediye: form yanıtı bekleniyor
+    else if (st.flow === "hediye_form") {
+      const formDoldu = t.length > 25 || /\d/.test(t) || t.includes("\n");
+      if (formDoldu) {
+        states.delete(from);
+        reply = HEDIYE_DONE;
+        lead = true;
+        logMsg = `🎁 HEDİYE TATİL BAŞVURU\n${t}`;
+      } else {
+        // Kısa/soru -> yanıtla, formu doldurmasını hatırlat (akış devam)
+        reply =
+          (await generateReply(from, t, name)) +
+          `\n\nHazır olduğunuzda yukarıdaki *form bilgilerini tek mesajda* gönderebilirsiniz 🙂`;
+      }
+    }
+    // 1c) Rezervasyon: adım adım anket
+    else {
       const sv = SURVEYS[st.flow];
       sv.questions[st.step] && (st.data[sv.questions[st.step].key] = t);
       st.step++;
@@ -201,20 +262,20 @@ export async function handleMessage(from, text, name) {
       }
     }
   }
-  // 2) Menü numarası seçimi
+  // 2) Menü: 1 = Hediye Tatil -> önce bilgi + onay (ANKETE DİREKT GİRME)
   else if (d === "1") {
-    states.set(from, { flow: "hediye", step: 0, data: {} });
-    reply = SURVEYS.hediye.questions[0].soru;
+    states.set(from, { flow: "hediye_consent" });
+    reply = HEDIYE_INFO + HEDIYE_CONSENT;
   } else if (d === "8") {
     states.set(from, { flow: "rezervasyon", step: 0, data: {} });
     reply = SURVEYS.rezervasyon.questions[0].soru;
   } else if (d && SECTIONS[d]) {
     reply = SECTIONS[d] + FOOTER;
   }
-  // 2b) Serbest metinde hediye tatil KATILIM/BAŞVURU niyeti -> doğrudan anket (1 gibi)
+  // 2b) Serbest metinde hediye katılım niyeti -> bilgi + onay (anket değil)
   else if (wantsHediyeBasvuru(lower)) {
-    states.set(from, { flow: "hediye", step: 0, data: {} });
-    reply = SURVEYS.hediye.questions[0].soru;
+    states.set(from, { flow: "hediye_consent" });
+    reply = HEDIYE_INFO + HEDIYE_CONSENT;
   }
   // 2c) Fotoğraf isteği -> ilgili kategorideki fotoğrafları gönder
   else if (photoCategory(lower)) {
