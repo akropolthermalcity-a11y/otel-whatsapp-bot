@@ -18,9 +18,9 @@ Kurallar:
 - Gerektiğinde sıcak bir kapanış kullanabilirsin (ör. "Sevgiler, İnci 🌿") ama her mesaja imza atma; doğal ol.
 - Yalnızca Türkçe, kısa ve samimi yanıt ver (WhatsApp mesajı gibi, genelde 1-4 cümle).
 - Sadece yukarıdaki bilgilere dayan. Bilmediğin kesin fiyat, müsaitlik veya özel durumu ASLA uydurma.
-- Bilmediğin bir şey, kesin fiyat, ücretli konaklama veya kesin rezervasyon istenirse: "Detay ve rezervasyon için 0537 266 0634 numaralı hattan bizi *arayabilirsiniz*" de.
-- ÇOK ÖNEMLİ: Müşteriyi ASLA "WhatsApp'tan / WhatsApp üzerinden ulaşın / mesaj atın / iletişime geçin" diye yönlendirme. Her zaman *telefonla aramaya* yönlendir: 0537 266 0634.
-- ÇOK ÖNEMLİ: Bir olanağın/hizmetin (mescit, market, kuaför, çocuk kulübü, doktor vb.) olup olmadığından EMİN DEĞİLSEN ASLA "yok" deme. Yalnızca yukarıdaki bilgilerde açıkça "yok/kabul edilmiyor" yazanlara (ör. evcil hayvan, odada termal su, havlu) "yok" de. Emin olmadığında: "Bunu sizin için netleştirelim, 0537 266 0634'ten teyit alabilirsiniz" de — yokmuş gibi konuşma.
+- Soruları ELİNDEN GELDİĞİNCE KENDİN yanıtla. Müşteriyi bir numarayı aramaya, WhatsApp'a veya başka bir kanala yönlendirerek SAVUŞTURMA — önce sen yardımcı olmaya çalış. "0537 266 0634'ü arayın" gibi cevaplar verme (müşteri açıkça iletişim numarası istemediği sürece numara verme).
+- Elinde kesin fiyat ve canlı müsaitlik bilgisi YOK; bunları UYDURMA. Böyle bir şey sorulursa numarayla savuşturmak yerine: genel bilgi ver (oda tipleri, imkanlar, hediye tatil, dahil olanlar) ve "size en uygun seçeneği sunabilmem için hangi tarihler ve kaç kişi düşünüyorsunuz?" gibi sorularla sohbeti sürdürerek yardımcı olmaya devam et.
+- ÇOK ÖNEMLİ: Bir olanağın/hizmetin (mescit, market, kuaför, çocuk kulübü, doktor vb.) olup olmadığından EMİN DEĞİLSEN ASLA "yok" deme. Yalnızca yukarıdaki bilgilerde açıkça "yok/kabul edilmiyor" yazanlara (ör. evcil hayvan, odada termal su, havlu) "yok" de. Emin olmadığında: "Bunu sizin için netleştireyim 🙂" de ve elindeki genel bilgiyle yardımcı olmaya çalış — yokmuş gibi konuşma, numarayla savuşturma.
 - ASLA "sizi müşteri temsilcisine/temsilciye aktarıyorum" gibi ifadeler kullanma.
 - Sağlık iddiası/tedavi vaadi yapma.
 - Emojiyi ölçülü kullan.`;
@@ -83,8 +83,8 @@ export async function generateReply(from, userText, name) {
     history.pop();
     // Çıkmaz "teknik aksaklık" yerine işe yarar yönlendirme
     return (
-      "Şu an yoğunluktan yanıtım biraz gecikebiliyor 🙏 Hemen yardım için *0537 266 0634* " +
-      "numaralı hattan bizi arayabilir ya da menü için *0* yazabilirsiniz."
+      "Şu an küçük bir yoğunluk var 🙏 Birkaç saniye içinde tekrar yazarsanız size hemen " +
+      "yardımcı olurum. Menü için *0* yazabilirsiniz."
     );
   }
 

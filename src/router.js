@@ -50,7 +50,7 @@ Dairelerimiz aile konaklamasına uygun, ferah ve konforlu şekilde tasarlanmış
 • Termal kullanım ortak alanlarda sunulur
 • Evcil hayvan kabul edilmez
 
-Uygun daire ve detaylar için: 📞 0537 266 0634`,
+Daha fazla detay veya size uygun daire için sorularınızı doğrudan bana yazabilirsiniz 🙂`,
 
   "4": `🏊 *Havuzlar, Termal & Sosyal*
 
@@ -124,7 +124,7 @@ Talebiniz değerlendirme birimimize iletilmiştir; uygunluk ve müsaitlik değer
 *İnci · Beypazarı İncisi* 🌿`;
 
 // "Hayır" yanıtı
-const HEDIYE_NO = `Tabii, anlıyorum 🙂 Dilediğiniz an hediye tatil başvurusu için bana yazabilir ya da 0537 266 0634 numaralı hattan bizi arayabilirsiniz.`;
+const HEDIYE_NO = `Tabii, anlıyorum 🙂 Hediye tatil ya da merak ettiğiniz başka bir konuda dilediğiniz an bana yazabilirsiniz; yardımcı olmaktan memnuniyet duyarım.`;
 
 // ---- REZERVASYON: hediye tatil mi, ücretli konaklama mı? ----
 const REZ_TIP_Q = `Tabii, memnuniyetle yardımcı olayım 🙂
@@ -134,8 +134,12 @@ Rezervasyonunuz *hediye tatil programımız* için mi, yoksa *ücretli konaklama
 // Tip belirsizse tekrar sor
 const REZ_TIP_TEKRAR = `Tam anlayabilmem için: *hediye tatil* programımız için mi, yoksa *ücretli konaklama* için mi düşünüyorsunuz? 🙂`;
 
-// Ücretli konaklama -> temsilciyi ARAMAYA yönlendir (WhatsApp deme)
-const REZ_UCRETLI = `Ücretli konaklama ve kesin rezervasyon için müşteri temsilcimizi *0537 266 0634* numaralı hattan arayabilirsiniz 🙂 Size en uygun seçenekleri memnuniyetle sunacaktır.`;
+// Ücretli konaklama -> bot kendi yardımcı olmaya çalışsın (numara verip savuşturma)
+const REZ_UCRETLI = `Tabii, memnuniyetle yardımcı olayım 🙂
+
+Akropol Termal Şehir'de aileye uygun *1+1 dairelerimiz*, kapalı/açık termal havuzlar, Aquapark, hamam ve dolu dolu bir tatil sizi bekliyor 🌿
+
+Size en uygun seçeneği önerebilmem için *hangi tarihler* ve *kaç kişi* (yetişkin/çocuk) düşünüyorsunuz? Merak ettiğiniz her şeyi de yanıtlamaktan memnuniyet duyarım.`;
 
 const FOOTER = `\n\n_Menü için 0 yazın._`;
 
@@ -293,7 +297,7 @@ export async function handleMessage(from, text, name) {
       reply = "İşte birkaç görselimiz 🙂 Başka merak ettiğiniz olursa menü için 0 yazabilirsiniz.";
     } else {
       reply =
-        "Görselleri sizinle hemen paylaşmak isterim 🙏 Şu an fotoğraflarımı hazırlıyorum; dilerseniz 0537 266 0634'ten gönderebilirim." +
+        "Bu konudaki görselim şu an hazır değil 🙂 Dilerseniz oda, havuz, termal, çevre veya çocuk alanı fotoğraflarımızı paylaşabilirim — hangisini görmek istersiniz?" +
         FOOTER;
     }
   }
