@@ -124,27 +124,18 @@ Talebiniz değerlendirme birimimize iletilmiştir; uygunluk ve müsaitlik değer
 *İnci · Beypazarı İncisi* 🌿`;
 
 // "Hayır" yanıtı
-const HEDIYE_NO = `Tabii, anlıyorum 🙂 Dilediğiniz an hediye tatil başvurusu için bana yazabilir ya da 0537 266 0634 numaramızdan bize ulaşabilirsiniz.`;
+const HEDIYE_NO = `Tabii, anlıyorum 🙂 Dilediğiniz an hediye tatil başvurusu için bana yazabilir ya da 0537 266 0634 numaralı hattan bizi arayabilirsiniz.`;
 
-// Adım adım anket akışı (yalnızca rezervasyon; her mesaj sıradaki sorunun cevabı olur)
-const SURVEYS = {
-  rezervasyon: {
-    title: "📅 REZERVASYON TALEBİ",
-    questions: [
-      { key: "Ad Soyad", soru: `📅 *Rezervasyon Talebi*\n\nBirkaç bilgi alalım.\n\nAdınız ve soyadınız?` },
-      { key: "Telefon", soru: `Telefon numaranız?` },
-      { key: "Tarih Aralığı", soru: `Konaklamak istediğiniz tarih aralığı?` },
-      { key: "Kişi Sayısı", soru: `Kaç kişi olacaksınız? (yetişkin / çocuk)` },
-    ],
-    done: `Talebiniz alınmıştır. ✅
+// ---- REZERVASYON: hediye tatil mi, ücretli konaklama mı? ----
+const REZ_TIP_Q = `Tabii, memnuniyetle yardımcı olayım 🙂
 
-Talebiniz ilgili birimimize iletildi; müşteri temsilcimiz en kısa sürede sizinle iletişime geçecektir.
+Rezervasyonunuz *hediye tatil programımız* için mi, yoksa *ücretli konaklama* için mi olacak?`;
 
-Teşekkür ederiz.
-Sevgiler,
-*İnci · Beypazarı İncisi* 🌿`,
-  },
-};
+// Tip belirsizse tekrar sor
+const REZ_TIP_TEKRAR = `Tam anlayabilmem için: *hediye tatil* programımız için mi, yoksa *ücretli konaklama* için mi düşünüyorsunuz? 🙂`;
+
+// Ücretli konaklama -> temsilciyi ARAMAYA yönlendir (WhatsApp deme)
+const REZ_UCRETLI = `Ücretli konaklama ve kesin rezervasyon için müşteri temsilcimizi *0537 266 0634* numaralı hattan arayabilirsiniz 🙂 Size en uygun seçenekleri memnuniyetle sunacaktır.`;
 
 const FOOTER = `\n\n_Menü için 0 yazın._`;
 
@@ -184,6 +175,18 @@ function wantsHediyeBasvuru(l) {
   // Salt bilgi sorusu işaretleri (varsa ve niyet zayıfsa ankete sokma)
   const sadeceBilgi = /(nedir|ne demek|hakk[ıi]nda bilgi|[şs]artlar[ıi]? (ne|nedir|neler)|ko[şs]ullar|detay)/.test(l);
   return niyet && !sadeceBilgi;
+}
+// Serbest metinde rezervasyon/konaklama niyeti var mı? (hediye değilse)
+function wantsRezervasyon(l) {
+  return /(rezervasyon|rezerve|yer ayır|yer ayir|oda tut|oda ayır|oda ayir|konaklamak ist|kalmak ist|tatil yapmak ist|tatile gel|tatil planl)/.test(
+    l
+  );
+}
+// Rezervasyon tipi seçimi: hediye mi, ücretli mi?
+function rezTipChoice(l) {
+  if (/hediye|ücretsiz|ucretsiz|bedava/.test(l)) return "hediye";
+  if (/ücretli|ucretli|paral[ıi]|ödeme|odeme|normal|para|kendi|ücret|ucret|konaklama|tatil/.test(l)) return "ucretli";
+  return null;
 }
 function formatData(data) {
   return Object.entries(data).map(([k, v]) => `${k}: ${v}`).join("\n");
@@ -246,19 +249,18 @@ export async function handleMessage(from, text, name) {
           `\n\nHazır olduğunuzda yukarıdaki *form bilgilerini tek mesajda* gönderebilirsiniz 🙂`;
       }
     }
-    // 1c) Rezervasyon: adım adım anket
-    else {
-      const sv = SURVEYS[st.flow];
-      sv.questions[st.step] && (st.data[sv.questions[st.step].key] = t);
-      st.step++;
-      if (st.step < sv.questions.length) {
-        states.set(from, st);
-        reply = sv.questions[st.step].soru;
-      } else {
+    // 1c) Rezervasyon tipi bekleniyor: hediye mi, ücretli mi?
+    else if (st.flow === "rez_tip") {
+      const tip = rezTipChoice(lower);
+      if (tip === "hediye") {
+        // Hediye tatil: detaylı bilgi + anketi TEK mesajda sor
+        states.set(from, { flow: "hediye_form" });
+        reply = HEDIYE_INFO + "\n\n" + HEDIYE_FORM;
+      } else if (tip === "ucretli") {
         states.delete(from);
-        reply = sv.done;
-        lead = true;
-        logMsg = `${sv.title}\n${formatData(st.data)}`;
+        reply = REZ_UCRETLI;
+      } else {
+        reply = REZ_TIP_TEKRAR; // belirsiz -> tekrar sor (akış devam)
       }
     }
   }
@@ -267,8 +269,9 @@ export async function handleMessage(from, text, name) {
     states.set(from, { flow: "hediye_consent" });
     reply = HEDIYE_INFO + HEDIYE_CONSENT;
   } else if (d === "8") {
-    states.set(from, { flow: "rezervasyon", step: 0, data: {} });
-    reply = SURVEYS.rezervasyon.questions[0].soru;
+    // Rezervasyon -> önce tip sor (hediye mi, ücretli mi?)
+    states.set(from, { flow: "rez_tip" });
+    reply = REZ_TIP_Q;
   } else if (d && SECTIONS[d]) {
     reply = SECTIONS[d] + FOOTER;
   }
@@ -276,6 +279,11 @@ export async function handleMessage(from, text, name) {
   else if (wantsHediyeBasvuru(lower)) {
     states.set(from, { flow: "hediye_consent" });
     reply = HEDIYE_INFO + HEDIYE_CONSENT;
+  }
+  // 2b2) Rezervasyon/konaklama niyeti -> tip sor (hediye mi, ücretli mi?)
+  else if (wantsRezervasyon(lower)) {
+    states.set(from, { flow: "rez_tip" });
+    reply = REZ_TIP_Q;
   }
   // 2c) Fotoğraf isteği -> ilgili kategorideki fotoğrafları gönder
   else if (photoCategory(lower)) {

@@ -18,7 +18,8 @@ Kurallar:
 - Gerektiğinde sıcak bir kapanış kullanabilirsin (ör. "Sevgiler, İnci 🌿") ama her mesaja imza atma; doğal ol.
 - Yalnızca Türkçe, kısa ve samimi yanıt ver (WhatsApp mesajı gibi, genelde 1-4 cümle).
 - Sadece yukarıdaki bilgilere dayan. Bilmediğin kesin fiyat, müsaitlik veya özel durumu ASLA uydurma.
-- Bilmediğin bir şey sorulursa ya da kesin fiyat/rezervasyon istenirse: "Detay ve rezervasyon için 0537 266 0634 numarasından bilgi alabilirsiniz" de.
+- Bilmediğin bir şey, kesin fiyat, ücretli konaklama veya kesin rezervasyon istenirse: "Detay ve rezervasyon için 0537 266 0634 numaralı hattan bizi *arayabilirsiniz*" de.
+- ÇOK ÖNEMLİ: Müşteriyi ASLA "WhatsApp'tan / WhatsApp üzerinden ulaşın / mesaj atın / iletişime geçin" diye yönlendirme. Her zaman *telefonla aramaya* yönlendir: 0537 266 0634.
 - ÇOK ÖNEMLİ: Bir olanağın/hizmetin (mescit, market, kuaför, çocuk kulübü, doktor vb.) olup olmadığından EMİN DEĞİLSEN ASLA "yok" deme. Yalnızca yukarıdaki bilgilerde açıkça "yok/kabul edilmiyor" yazanlara (ör. evcil hayvan, odada termal su, havlu) "yok" de. Emin olmadığında: "Bunu sizin için netleştirelim, 0537 266 0634'ten teyit alabilirsiniz" de — yokmuş gibi konuşma.
 - ASLA "sizi müşteri temsilcisine/temsilciye aktarıyorum" gibi ifadeler kullanma.
 - Sağlık iddiası/tedavi vaadi yapma.
@@ -83,7 +84,7 @@ export async function generateReply(from, userText, name) {
     // Çıkmaz "teknik aksaklık" yerine işe yarar yönlendirme
     return (
       "Şu an yoğunluktan yanıtım biraz gecikebiliyor 🙏 Hemen yardım için *0537 266 0634* " +
-      "numaramızdan bize ulaşabilir ya da menü için *0* yazabilirsiniz."
+      "numaralı hattan bizi arayabilir ya da menü için *0* yazabilirsiniz."
     );
   }
 

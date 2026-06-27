@@ -88,13 +88,13 @@ export const HOTEL_INFO = `
 - Ana mesaj: Misafirlerin 2 gece 3 günlük hediye tatil fırsatını keyifli, huzurlu ve unutulmaz bir aile deneyimine dönüştürmesini istiyoruz.
 
 ## İLETİŞİM (Beypazarı İncisi)
-- Telefon/WhatsApp: 0537 266 0634
+- Telefon (arama hattı): 0537 266 0634 — müşteriyi her zaman bu numarayı ARAMAYA yönlendir; "WhatsApp'tan ulaşın" DEME.
 - E-posta: beypazariincisi@gmail.com
 - Instagram: @beypazari.incisi
 
 ## FİYAT / MÜSAİTLİK / KESİN REZERVASYON
 - Elinde net oda fiyatı ve canlı müsaitlik bilgisi YOK. Bunları UYDURMA.
-- Kesin fiyat, tarih bazlı müsaitlik veya rezervasyon kesinleştirme istenirse müşteri temsilcisine aktar.
+- Kesin fiyat, tarih bazlı müsaitlik, ücretli konaklama veya rezervasyon kesinleştirme istenirse: "0537 266 0634 numaralı hattan bizi arayabilirsiniz" de (WhatsApp'a değil, ARAMAYA yönlendir).
 
 ## NE ZAMAN TEMSİLCİYE AKTAR
 - Kesin rezervasyon / ödeme / tarih bazlı müsaitlik
