@@ -126,20 +126,8 @@ Talebiniz değerlendirme birimimize iletilmiştir; uygunluk ve müsaitlik değer
 // "Hayır" yanıtı
 const HEDIYE_NO = `Tabii, anlıyorum 🙂 Hediye tatil ya da merak ettiğiniz başka bir konuda dilediğiniz an bana yazabilirsiniz; yardımcı olmaktan memnuniyet duyarım.`;
 
-// ---- REZERVASYON: hediye tatil mi, ücretli konaklama mı? ----
-const REZ_TIP_Q = `Tabii, memnuniyetle yardımcı olayım 🙂
-
-Rezervasyonunuz *hediye tatil programımız* için mi, yoksa *ücretli konaklama* için mi olacak?`;
-
-// Tip belirsizse tekrar sor
-const REZ_TIP_TEKRAR = `Tam anlayabilmem için: *hediye tatil* programımız için mi, yoksa *ücretli konaklama* için mi düşünüyorsunuz? 🙂`;
-
-// Ücretli konaklama -> bot kendi yardımcı olmaya çalışsın (numara verip savuşturma)
-const REZ_UCRETLI = `Tabii, memnuniyetle yardımcı olayım 🙂
-
-Akropol Termal Şehir'de aileye uygun *1+1 dairelerimiz*, kapalı/açık termal havuzlar, Aquapark, hamam ve dolu dolu bir tatil sizi bekliyor 🌿
-
-Size en uygun seçeneği önerebilmem için *hangi tarihler* ve *kaç kişi* (yetişkin/çocuk) düşünüyorsunuz? Merak ettiğiniz her şeyi de yanıtlamaktan memnuniyet duyarım.`;
+// Ücretli konaklama TAMAMEN KALDIRILDI; ilgili soru gelirse sadece dönüş mesajı verilir.
+const UCRETLI_DONUS = `Ücretli konaklama talepleriniz için ekibimiz en kısa sürede size dönüş yapacaktır 🙂`;
 
 const FOOTER = `\n\n_Menü için 0 yazın._`;
 
@@ -180,17 +168,17 @@ function wantsHediyeBasvuru(l) {
   const sadeceBilgi = /(nedir|ne demek|hakk[ıi]nda bilgi|[şs]artlar[ıi]? (ne|nedir|neler)|ko[şs]ullar|detay)/.test(l);
   return niyet && !sadeceBilgi;
 }
-// Serbest metinde rezervasyon/konaklama niyeti var mı? (hediye değilse)
+// Serbest metinde rezervasyon/konaklama niyeti var mı?
 function wantsRezervasyon(l) {
   return /(rezervasyon|rezerve|yer ayır|yer ayir|oda tut|oda ayır|oda ayir|konaklamak ist|kalmak ist|tatil yapmak ist|tatile gel|tatil planl)/.test(
     l
   );
 }
-// Rezervasyon tipi seçimi: hediye mi, ücretli mi?
-function rezTipChoice(l) {
-  if (/hediye|ücretsiz|ucretsiz|bedava/.test(l)) return "hediye";
-  if (/ücretli|ucretli|paral[ıi]|ödeme|odeme|normal|para|kendi|ücret|ucret|konaklama|tatil/.test(l)) return "ucretli";
-  return null;
+// Ücretli/paralı konaklama sorusu mu? (tamamen kaldırıldı -> sadece dönüş mesajı)
+function wantsUcretli(l) {
+  return /(ücretli|ucretli|paral[ıi]|para (ile|vererek|ödeyerek)|ödeyerek kal|odeyerek kal|normal (konaklama|otel|rezervasyon|tatil))/.test(
+    l
+  );
 }
 function formatData(data) {
   return Object.entries(data).map(([k, v]) => `${k}: ${v}`).join("\n");
@@ -253,41 +241,31 @@ export async function handleMessage(from, text, name) {
           `\n\nHazır olduğunuzda yukarıdaki *form bilgilerini tek mesajda* gönderebilirsiniz 🙂`;
       }
     }
-    // 1c) Rezervasyon tipi bekleniyor: hediye mi, ücretli mi?
-    else if (st.flow === "rez_tip") {
-      const tip = rezTipChoice(lower);
-      if (tip === "hediye") {
-        // Hediye tatil: detaylı bilgi + anketi TEK mesajda sor
-        states.set(from, { flow: "hediye_form" });
-        reply = HEDIYE_INFO + "\n\n" + HEDIYE_FORM;
-      } else if (tip === "ucretli") {
-        states.delete(from);
-        reply = REZ_UCRETLI;
-      } else {
-        reply = REZ_TIP_TEKRAR; // belirsiz -> tekrar sor (akış devam)
-      }
-    }
   }
   // 2) Menü: 1 = Hediye Tatil -> önce bilgi + onay (ANKETE DİREKT GİRME)
   else if (d === "1") {
     states.set(from, { flow: "hediye_consent" });
     reply = HEDIYE_INFO + HEDIYE_CONSENT;
   } else if (d === "8") {
-    // Rezervasyon -> önce tip sor (hediye mi, ücretli mi?)
-    states.set(from, { flow: "rez_tip" });
-    reply = REZ_TIP_Q;
+    // Rezervasyon Talebi -> hediye tatil akışı (ücretli konaklama kaldırıldı)
+    states.set(from, { flow: "hediye_consent" });
+    reply = HEDIYE_INFO + HEDIYE_CONSENT;
   } else if (d && SECTIONS[d]) {
     reply = SECTIONS[d] + FOOTER;
   }
-  // 2b) Serbest metinde hediye katılım niyeti -> bilgi + onay (anket değil)
+  // 2a) Ücretli/paralı konaklama sorusu -> sadece "dönüş yapacağız" (akış yok)
+  else if (wantsUcretli(lower)) {
+    reply = UCRETLI_DONUS + FOOTER;
+  }
+  // 2b) Serbest metinde hediye katılım niyeti -> bilgi + onay
   else if (wantsHediyeBasvuru(lower)) {
     states.set(from, { flow: "hediye_consent" });
     reply = HEDIYE_INFO + HEDIYE_CONSENT;
   }
-  // 2b2) Rezervasyon/konaklama niyeti -> tip sor (hediye mi, ücretli mi?)
+  // 2b2) Rezervasyon/konaklama niyeti -> hediye tatil akışı
   else if (wantsRezervasyon(lower)) {
-    states.set(from, { flow: "rez_tip" });
-    reply = REZ_TIP_Q;
+    states.set(from, { flow: "hediye_consent" });
+    reply = HEDIYE_INFO + HEDIYE_CONSENT;
   }
   // 2c) Fotoğraf isteği -> ilgili kategorideki fotoğrafları gönder
   else if (photoCategory(lower)) {
