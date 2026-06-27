@@ -2,10 +2,11 @@
 // Numara/menü seçimleri Gemini kotası harcamaz (sabit metin). Serbest metin -> AI.
 import { generateReply } from "./ai.js";
 import { logConversation } from "./logger.js";
+import { photosFor } from "./photos.js";
 
-const MENU = `Merhaba 👋
+const MENU = `Merhaba, ben İnci 👋
 
-Beypazarı İncisi'ne hoş geldiniz.
+Beypazarı İncisi'nden size yardımcı olacağım.
 
 Akropol Termal hakkında bilgi almak istediğiniz konunun numarasını yazabilirsiniz.
 
@@ -103,7 +104,8 @@ const SURVEYS = {
 Talebiniz ilgili birimimize iletilmiştir. Uygunluk ve rezervasyon değerlendirmesi sonrasında müşteri temsilcimiz sizinle iletişime geçecektir.
 
 İlginiz için teşekkür ederiz.
-*Beypazarı İncisi*`,
+Sevgiler,
+*İnci · Beypazarı İncisi* 🌿`,
   },
   rezervasyon: {
     title: "📅 REZERVASYON TALEBİ",
@@ -118,7 +120,8 @@ Talebiniz ilgili birimimize iletilmiştir. Uygunluk ve rezervasyon değerlendirm
 Talebiniz ilgili birimimize iletildi; müşteri temsilcimiz en kısa sürede sizinle iletişime geçecektir.
 
 Teşekkür ederiz.
-*Beypazarı İncisi*`,
+Sevgiler,
+*İnci · Beypazarı İncisi* 🌿`,
   },
 };
 
@@ -138,8 +141,31 @@ function isGreeting(l) {
 function isCancel(l) {
   return /^(iptal|vazgeç|vazgec|çıkış|cikis|geri)$/.test(l.trim());
 }
+// Serbest metinde "hediye tatile katılmak/kullanmak/başvurmak istiyorum" gibi NİYET var mı?
+// Salt bilgi sorusu (nedir, şartları, hakkında) ankete sokulmaz.
+function wantsHediyeBasvuru(l) {
+  if (!/hediye|bedava tatil|ücretsiz tatil|ucretsiz tatil/.test(l)) return false;
+  // Niyet ifadeleri: katıl / kullan / başvur / yararlan / faydalan / hak kazan / istiyorum ...
+  const niyet =
+    /(katıl|katil|kullan|başvur|basvur|yararlan|faydalan|kazan|hakk?ım|hakkim|hediyem|almak ist|kayıt|kayit|nas[ıi]l (katıl|katil|başvur|basvur|yararlan|olur)|kat[ıi]lmak|ba[şs]vurmak|istiyorum|isterim|talep)/.test(
+      l
+    );
+  // Salt bilgi sorusu işaretleri (varsa ve niyet zayıfsa ankete sokma)
+  const sadeceBilgi = /(nedir|ne demek|hakk[ıi]nda bilgi|[şs]artlar[ıi]? (ne|nedir|neler)|ko[şs]ullar|detay)/.test(l);
+  return niyet && !sadeceBilgi;
+}
 function formatData(data) {
   return Object.entries(data).map(([k, v]) => `${k}: ${v}`).join("\n");
+}
+// Mesaj fotoğraf isteği mi? İstiyorsa hangi kategori? Değilse null.
+function photoCategory(l) {
+  if (!/(foto|fotoğraf|fotograf|resim|görsel|gorsel|görebilir|gorebilir|göster|goster|göndere?bil|gondere?bil)/.test(l))
+    return null;
+  if (/oda|daire|s[uü]it|konaklama/.test(l)) return "oda";
+  if (/havuz|aquapark/.test(l)) return "havuz";
+  if (/termal|sauna|hamam|kapl[ıi]ca|spa/.test(l)) return "termal";
+  if (/d[ıi][şs]|[çc]evre|bah[çc]e|manzara|tesis|d[ıi][şs] mekan|d[ıi][şs]ar/.test(l)) return "dis";
+  return "genel";
 }
 
 export async function handleMessage(from, text, name) {
@@ -149,6 +175,7 @@ export async function handleMessage(from, text, name) {
   const d = menuDigit(t);
 
   let reply;
+  let images = null; // dolu ise server fotoğrafları gönderir
   let lead = false; // e-posta + Sheet'te "talep" olarak işaretle
   let logMsg = t;
 
@@ -182,6 +209,23 @@ export async function handleMessage(from, text, name) {
   } else if (d && SECTIONS[d]) {
     reply = SECTIONS[d] + FOOTER;
   }
+  // 2b) Serbest metinde hediye tatil KATILIM/BAŞVURU niyeti -> doğrudan anket (1 gibi)
+  else if (wantsHediyeBasvuru(lower)) {
+    states.set(from, { flow: "hediye", step: 0, data: {} });
+    reply = SURVEYS.hediye.questions[0].soru;
+  }
+  // 2c) Fotoğraf isteği -> ilgili kategorideki fotoğrafları gönder
+  else if (photoCategory(lower)) {
+    const imgs = photosFor(photoCategory(lower));
+    if (imgs.length) {
+      images = imgs;
+      reply = "İşte birkaç görselimiz 🙂 Başka merak ettiğiniz olursa menü için 0 yazabilirsiniz.";
+    } else {
+      reply =
+        "Görselleri sizinle hemen paylaşmak isterim 🙏 Şu an fotoğraflarımı hazırlıyorum; dilerseniz 0537 266 0634'ten gönderebilirim." +
+        FOOTER;
+    }
+  }
   // 3) İlk temas / karşılama -> menü
   else if (!seen.has(from) || isGreeting(lower)) {
     reply = MENU;
@@ -193,5 +237,5 @@ export async function handleMessage(from, text, name) {
 
   seen.add(from);
   logConversation({ numara: from, isim: name ?? "", mesaj: logMsg, cevap: reply, aktarma: lead });
-  return reply;
+  return images ? { text: reply, images } : reply;
 }

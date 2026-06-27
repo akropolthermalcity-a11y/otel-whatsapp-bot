@@ -52,6 +52,16 @@ export function sendText(to, body) {
   });
 }
 
+// Fotoğraf gönder (link ile; herkese açık HTTPS jpg/png, ~5 MB altı)
+export function sendImage(to, link, caption) {
+  return callApi({
+    messaging_product: "whatsapp",
+    to,
+    type: "image",
+    image: caption ? { link, caption: caption.slice(0, 1024) } : { link },
+  });
+}
+
 // Mesajı "okundu" işaretle (mavi tik) — opsiyonel ama hoş bir dokunuş
 export function markAsRead(messageId) {
   return callApi({

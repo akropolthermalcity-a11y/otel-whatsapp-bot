@@ -2,13 +2,15 @@
 import express from "express";
 import crypto from "node:crypto";
 import { CONFIG } from "./config.js";
-import { extractIncomingMessages, markAsRead, sendText } from "./whatsapp.js";
+import { extractIncomingMessages, markAsRead, sendText, sendImage } from "./whatsapp.js";
 import { handleMessage } from "./router.js";
 import { fetchRows, renderPanel, renderLogin, renderChangePass } from "./panel.js";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false })); // panel giriş formu için
+// Fotoğraflar: public/img -> https://.../img/oda1.jpg (WhatsApp link ile gönderir)
+app.use("/img", express.static("public/img", { maxAge: "7d" }));
 
 // --- Panel şifresi: kalıcı olarak Apps Script deposunda (ScriptProperties) tutulur.
 //     Bot uykudan kalksa bile değişen şifre korunur. Depo boşsa env'deki PANEL_PASS kullanılır.
@@ -106,8 +108,14 @@ app.post("/webhook", async (req, res) => {
         continue;
       }
       markAsRead(msg.id).catch(() => {});
-      const reply = await handleMessage(msg.from, msg.text, msg.name);
-      await sendText(msg.from, reply);
+      const out = await handleMessage(msg.from, msg.text, msg.name);
+      if (out && typeof out === "object") {
+        // Önce fotoğraf(lar), sonra açıklama metni
+        for (const img of out.images ?? []) await sendImage(msg.from, img.url, img.caption);
+        if (out.text) await sendText(msg.from, out.text);
+      } else {
+        await sendText(msg.from, out);
+      }
     }
   } catch (err) {
     console.error("Webhook işleme hatası:", err);
