@@ -188,6 +188,9 @@ export function renderPanel(rows, humanNumbers) {
     padding:4px 9px;font-size:12px;cursor:pointer;flex-shrink:0}
   .turn.hl{background:rgba(34,197,94,.09);border:1px solid var(--accent);border-radius:12px;padding:8px;margin:-8px}
   .hltag{color:#22c55e;font-size:11px;font-weight:700;margin-bottom:4px}
+  .window-warning{background:rgba(239,68,68,.1);border:1px solid var(--err);color:#fca5a5;
+    border-radius:10px;padding:9px 12px;font-size:12px;line-height:1.5;margin-bottom:10px}
+  .chip.closed{background:rgba(239,68,68,.14);color:#fca5a5;border-color:#ef444444}
   @media(max-width:760px){
     .app{flex-direction:column}
     .side{width:auto;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);padding:10px}
@@ -275,7 +278,7 @@ function customers(){
   var map={}, order=[];
   for(var i=0;i<ROWS.length;i++){
     var r=ROWS[i], key=digits(r.numara)||String(r.numara||"?");
-    if(!map[key]){ map[key]={key:key,numara:r.numara,isim:"",rows:[],scn:{},lead:false,first:r.tarih,last:r.tarih}; order.push(key); }
+    if(!map[key]){ map[key]={key:key,numara:r.numara,isim:"",rows:[],scn:{},lead:false,first:r.tarih,last:r.tarih,lastInbound:null}; order.push(key); }
     var c=map[key];
     c.rows.push(r);
     if(r.isim && String(r.isim).trim()) c.isim=r.isim;
@@ -283,6 +286,9 @@ function customers(){
     var tags=classify(r.mesaj); for(var j=0;j<tags.length;j++) c.scn[tags[j]]=true;
     if(new Date(r.tarih)<new Date(c.first)) c.first=r.tarih;
     if(new Date(r.tarih)>new Date(c.last)) c.last=r.tarih;
+    // Yalnızca MÜŞTERİDEN gelen mesajlar WhatsApp'ın 24 saatlik yanıt penceresini açar
+    // (temsilcinin panelden gönderdiği mesajlar "mesaj" alanını boş bırakır, sayılmaz).
+    if(String(r.mesaj||"").trim() && (!c.lastInbound || new Date(r.tarih)>new Date(c.lastInbound))) c.lastInbound=r.tarih;
   }
   var arr=order.map(function(k){ return map[k]; });
   arr.sort(function(a,b){ return new Date(b.last)-new Date(a.last); });
@@ -298,8 +304,10 @@ function custCard(c){
   var name=esc(c.isim||"İsimsiz");
   var lead=c.lead?'<span class="chip lead">🔔 Talep</span>':"";
   var human=isPaused(c.numara)?'<span class="chip human">🧑‍💼 Temsilci</span>':"";
+  var hoursSinceInbound = c.lastInbound ? (new Date()-new Date(c.lastInbound))/3600000 : Infinity;
+  var closed = hoursSinceInbound>=24 ? '<span class="chip closed" title="24 saattir yazmadı — serbest mesaj ulaşmaz">⏰ 24s+</span>' : "";
   return '<div class="cust" onclick="openCust(\\''+c.key+'\\')">'+
-    '<div class="row1"><div class="nm">'+name+'</div><div class="chips">'+lead+human+'</div></div>'+
+    '<div class="row1"><div class="nm">'+name+'</div><div class="chips">'+lead+human+closed+'</div></div>'+
     '<div>'+waLink(c.numara)+'</div>'+
     '<div class="meta">'+c.rows.length+' mesaj · son '+fmtRel(c.last)+'</div>'+
     '<div class="chips">'+scnChips(c.scn)+'</div></div>';
@@ -414,7 +422,14 @@ function openCust(key, forceBottom){
     '<div class="chips">'+scnChips(c.scn)+'</div>'+
     '<div class="meta" style="color:var(--muted);font-size:12px;margin-top:8px">'+c.rows.length+' mesaj · ilk: '+fmtDate(c.first)+' · son: '+fmtDate(c.last)+'</div>'+
     jumpBanner;
+  // WhatsApp 24 saat kuralı: müşteri size 24 saattir yazmadıysa serbest metin ULAŞMAZ (yalnızca onaylı şablon mesaj gider).
+  var hoursSinceInbound = c.lastInbound ? (new Date()-new Date(c.lastInbound))/3600000 : Infinity;
+  var windowClosed = hoursSinceInbound >= 24;
+  var windowWarning = windowClosed
+    ? '<div class="window-warning">⏰ Bu müşteri size <b>'+(isFinite(hoursSinceInbound)?Math.floor(hoursSinceInbound)+' saattir':'hiç')+'</b> yazmadı — WhatsApp kuralı gereği 24 saati geçince gönderdiğiniz serbest metin <b>müşteriye ulaşmaz</b> (Meta kabul etse bile). Yalnızca müşteri size tekrar yazarsa ya da Meta onaylı bir şablon mesajla mümkündür.</div>'
+    : '';
   var foot=(paused?'<div class="pausebar">🧑‍💼 Temsilci modu açık — bot bu müşteride sessiz<button class="btn-resume" onclick="resumeBot(\\''+key+'\\')">Bot\\'a geri ver</button></div>':'')+
+    windowWarning+
     '<div class="sendrow">'+
       '<textarea id="msgbox" rows="1" placeholder="Müşteriye yazın... (gönderince bot bu sohbette duraklar)" onkeydown="if(event.key===\\'Enter\\'&&!event.shiftKey){event.preventDefault();sendMsg(\\''+key+'\\');}"></textarea>'+
       '<button class="btn-send" id="sendbtn" onclick="sendMsg(\\''+key+'\\')">Gönder</button>'+
@@ -438,6 +453,11 @@ async function sendMsg(key){
   var text=(box.value||"").trim(); if(!text) return;
   var cs=customers(), c=null; for(var i=0;i<cs.length;i++) if(cs[i].key===key){ c=cs[i]; break; }
   if(!c) return;
+  var hoursSinceInbound = c.lastInbound ? (new Date()-new Date(c.lastInbound))/3600000 : Infinity;
+  if(hoursSinceInbound>=24){
+    var ok=confirm("⏰ Bu müşteri size 24 saatten uzun süredir yazmadı. WhatsApp kuralı gereği bu mesaj muhtemelen ULAŞMAYACAK (Meta kabul etse bile). Yine de göndermek istiyor musunuz?");
+    if(!ok) return;
+  }
   box.disabled=true; btn.disabled=true;
   try{
     var r=await fetch("/panel/send",{method:"POST",headers:{"Content-Type":"application/json"},
