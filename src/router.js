@@ -133,6 +133,18 @@ const FOOTER = `\n\n_Menü için 0 yazın._`;
 
 const states = new Map(); // from -> { flow, step, data }
 const seen = new Set();
+const humanMode = new Map(); // from -> devralma zamanı; kayıtlıysa bot o müşteride SESSİZ kalır
+
+export function isHumanMode(from) {
+  return humanMode.has(from);
+}
+export function setHumanMode(from, on) {
+  if (on) humanMode.set(from, Date.now());
+  else humanMode.delete(from);
+}
+export function getHumanNumbers() {
+  return [...humanMode.keys()];
+}
 
 // Mesaj tek başına bir menü numarası mı (1-8)? "1️⃣", "1.", " 1 " hepsi olur.
 function menuDigit(t) {
@@ -183,6 +195,17 @@ function wantsUcretli(l) {
 function formatData(data) {
   return Object.entries(data).map(([k, v]) => `${k}: ${v}`).join("\n");
 }
+// Gerçekten doldurulmuş bir başvuru formu mu, yoksa aradaki bir soru mu?
+// Sadece uzun/rakamlı metin YETMEZ (ör. "2 gece kaç kişi kalabilir?" ankete düşmesin) —
+// güçlü sinyal: telefon numarası olacak kadar çok rakam + birden fazla alan/uzun metin.
+function looksLikeFilledForm(t) {
+  const digitCount = (t.match(/\d/g) || []).length;
+  const segments = t
+    .split(/[,;\n]+/)
+    .map((s) => s.trim())
+    .filter(Boolean).length;
+  return digitCount >= 9 && (segments >= 3 || t.length > 60);
+}
 // Mesaj fotoğraf isteği mi? İstiyorsa hangi kategori? Değilse null.
 function photoCategory(l) {
   if (!/(foto|fotoğraf|fotograf|resim|görsel|gorsel|görebilir|gorebilir|göster|goster|göndere?bil|gondere?bil)/.test(l))
@@ -198,6 +221,14 @@ function photoCategory(l) {
 
 export async function handleMessage(from, text, name) {
   const t = (text || "").trim();
+
+  // Temsilci bu müşteriyi panelden devraldıysa: bot SESSİZ kalır, sadece mesajı kaydeder.
+  if (isHumanMode(from)) {
+    seen.add(from);
+    logConversation({ numara: from, isim: name ?? "", mesaj: t, cevap: "", aktarma: false });
+    return null;
+  }
+
   const lower = t.toLowerCase();
   const st = states.get(from);
   const d = menuDigit(t);
@@ -228,7 +259,7 @@ export async function handleMessage(from, text, name) {
     }
     // 1b) Hediye: form yanıtı bekleniyor
     else if (st.flow === "hediye_form") {
-      const formDoldu = t.length > 25 || /\d/.test(t) || t.includes("\n");
+      const formDoldu = looksLikeFilledForm(t);
       if (formDoldu) {
         states.delete(from);
         reply = HEDIYE_DONE;

@@ -3,8 +3,9 @@ import express from "express";
 import crypto from "node:crypto";
 import { CONFIG } from "./config.js";
 import { extractIncomingMessages, markAsRead, sendText, sendImage } from "./whatsapp.js";
-import { handleMessage } from "./router.js";
+import { handleMessage, setHumanMode, getHumanNumbers } from "./router.js";
 import { fetchRows, renderPanel, renderLogin, renderChangePass } from "./panel.js";
+import { logConversation } from "./logger.js";
 
 const app = express();
 app.use(express.json());
@@ -109,7 +110,9 @@ app.post("/webhook", async (req, res) => {
       }
       markAsRead(msg.id).catch(() => {});
       const out = await handleMessage(msg.from, msg.text, msg.name);
-      if (out && typeof out === "object") {
+      if (out === null) {
+        // Temsilci bu müşteriyi panelden devraldı: bot sessiz kalır.
+      } else if (out && typeof out === "object") {
         // Önce fotoğraf(lar), sonra açıklama metni
         for (const img of out.images ?? []) await sendImage(msg.from, img.url, img.caption);
         if (out.text) await sendText(msg.from, out.text);
@@ -172,10 +175,39 @@ app.get("/panel/data", async (req, res) => {
   if (!(await isPanelLoggedIn(req))) return res.status(401).json({ error: "giris gerekli" });
   try {
     const rows = await fetchRows();
-    res.json({ rows });
+    res.json({ rows, humanNumbers: getHumanNumbers() });
   } catch (err) {
     res.status(500).json({ error: "veri alinamadi" });
   }
+});
+
+// Temsilci: panelden müşteriye mesaj gönder (bot o müşteri için otomatik duraklar)
+app.post("/panel/send", async (req, res) => {
+  if (!(await isPanelLoggedIn(req))) return res.status(401).json({ error: "giris gerekli" });
+  const { numara, mesaj } = req.body || {};
+  if (!numara || !mesaj || !String(mesaj).trim()) {
+    return res.status(400).json({ error: "numara ve mesaj gerekli" });
+  }
+  const ok = await sendText(numara, String(mesaj).trim());
+  if (!ok) return res.status(502).json({ error: "mesaj gonderilemedi" });
+  setHumanMode(numara, true);
+  logConversation({
+    numara,
+    isim: "",
+    mesaj: "",
+    cevap: `👤 Temsilci: ${String(mesaj).trim()}`,
+    aktarma: false,
+  });
+  res.json({ ok: true });
+});
+
+// Temsilci: bu müşteri için botu tekrar devreye al
+app.post("/panel/resume", async (req, res) => {
+  if (!(await isPanelLoggedIn(req))) return res.status(401).json({ error: "giris gerekli" });
+  const { numara } = req.body || {};
+  if (!numara) return res.status(400).json({ error: "numara gerekli" });
+  setHumanMode(numara, false);
+  res.json({ ok: true });
 });
 
 // Yönetim paneli (oturum çereziyle korumalı; çerez yoksa giriş sayfası)
@@ -188,7 +220,7 @@ app.get("/panel", async (req, res) => {
   }
   try {
     const rows = await fetchRows();
-    res.send(renderPanel(rows));
+    res.send(renderPanel(rows, getHumanNumbers()));
   } catch (err) {
     console.error("Panel hatası:", err?.message ?? err);
     res

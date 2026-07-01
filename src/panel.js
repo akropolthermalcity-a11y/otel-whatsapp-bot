@@ -92,8 +92,9 @@ export function renderChangePass(errCode) {
 }
 
 // ---- Ana panel (müşteri-bazlı + senaryo etiketli SPA) ----
-export function renderPanel(rows) {
+export function renderPanel(rows, humanNumbers) {
   const json = JSON.stringify(rows).replace(/</g, "\\u003c");
+  const humanJson = JSON.stringify(humanNumbers || []).replace(/</g, "\\u003c");
   return `<!doctype html>
 <html lang="tr"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -151,18 +152,39 @@ export function renderPanel(rows) {
   .toast{background:rgba(34,197,94,.14);border:1px solid var(--accent);color:#86efac;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:14px}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
   .modal.open{display:flex}
-  .sheet{background:var(--card);border:1px solid var(--line);border-radius:16px;max-width:640px;width:100%;max-height:86vh;overflow:auto;padding:20px}
-  .sheet .x{float:right;cursor:pointer;color:var(--muted);font-size:20px;line-height:1}
-  .thread{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+  .sheet{background:var(--card);border:1px solid var(--line);border-radius:16px;max-width:640px;width:100%;max-height:86vh;
+    display:flex;flex-direction:column;padding:0;overflow:hidden}
+  .sheet-head{padding:20px 20px 12px;border-bottom:1px solid var(--line)}
+  .sheet-head .x{float:right;cursor:pointer;color:var(--muted);font-size:22px;line-height:1;padding:4px}
+  .sheet-body{flex:1;overflow-y:auto;padding:14px 20px}
+  .sheet-foot{border-top:1px solid var(--line);padding:10px 14px;background:var(--card2)}
+  .thread{display:flex;flex-direction:column;gap:12px}
   .turn .q{background:#0f1720;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:13px;white-space:pre-wrap}
   .turn .a{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:13px;white-space:pre-wrap;margin-top:6px;color:#cbd5e1}
+  .turn .h{background:rgba(245,158,11,.14);border:1px solid #f59e0b55;color:#fcd34d}
   .turn .tm{color:var(--muted);font-size:11px;margin-bottom:4px}
+  .pausebar{display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(245,158,11,.12);
+    border:1px solid #f59e0b55;color:#fcd34d;border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:10px}
+  .btn-resume{background:transparent;border:1px solid #f59e0b88;color:#fcd34d;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;flex-shrink:0}
+  .sendrow{display:flex;gap:8px;align-items:flex-end}
+  .sendrow textarea{flex:1;resize:none;border-radius:10px;border:1px solid var(--line);background:#0f1720;color:var(--text);
+    padding:9px 11px;font-size:14px;font-family:inherit;outline:none;max-height:100px}
+  .sendrow textarea:focus{border-color:var(--accent)}
+  .btn-send{background:var(--accent);color:#06210f;border:0;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;flex-shrink:0}
+  .btn-send:disabled{opacity:.6;cursor:default}
+  .chip.human{background:rgba(245,158,11,.16);color:#fbbf24;border-color:#f59e0b44}
+  .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
   @media(max-width:760px){
     .app{flex-direction:column}
-    .side{width:auto;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line)}
+    .side{width:auto;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);padding:10px}
     .side nav{flex-direction:row;flex-wrap:wrap}
-    .brand{width:100%}.side-foot{margin:0;border:0;flex-direction:row}
-    .bar{grid-template-columns:120px 1fr 36px}
+    .brand{width:100%}.side-foot{margin:0;border:0;flex-direction:row;flex-wrap:wrap}
+    .bar{grid-template-columns:110px 1fr 34px;font-size:12px}
+    .main{padding:14px}
+    .modal{padding:0}
+    .sheet{max-width:100%;width:100%;height:100%;max-height:100%;border-radius:0}
+    input.search{min-width:0;width:100%}
+    .cards{grid-template-columns:repeat(2,1fr)}
   }
 </style></head><body>
 <div class="app">
@@ -188,7 +210,8 @@ export function renderPanel(rows) {
 <div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
 <script>
 var ROWS = ${json};
-var view = "overview", scnFilter = null, q = "";
+var HUMAN = ${humanJson};
+var view = "overview", scnFilter = null, q = "", openKey = null;
 var SCN = {
   hediye:{t:"🎁 Hediye Tatil",c:"#22c55e"},
   rezervasyon:{t:"📅 Rezervasyon",c:"#38bdf8"},
@@ -209,6 +232,11 @@ function fmtDate(s){ try{ var d=new Date(s); return isNaN(d)?(s||""):d.toLocaleS
 function isToday(s){ try{ var d=new Date(s),n=new Date(); return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate(); }catch(e){ return false; } }
 function fmtRel(s){ try{ var d=new Date(s),now=new Date(),ms=now-d,mi=Math.floor(ms/60000); if(mi<1)return "az önce"; if(mi<60)return mi+" dk önce"; var h=Math.floor(mi/60); if(h<24)return h+" saat önce"; var g=Math.floor(h/24); if(g<30)return g+" gün önce"; return d.toLocaleDateString("tr-TR"); }catch(e){ return ""; } }
 function waLink(num){ var n=digits(num); return n?'<a class="ph" href="https://wa.me/'+n+'" target="_blank" onclick="event.stopPropagation()">'+esc(num)+'</a>':esc(num); }
+function isPaused(numRaw){
+  var target=digits(numRaw);
+  for(var i=0;i<HUMAN.length;i++){ if(digits(HUMAN[i])===target) return true; }
+  return false;
+}
 function classify(mesaj){
   var tags={}, m=String(mesaj||"").toLowerCase();
   function add(k){ tags[k]=true; }
@@ -255,8 +283,9 @@ function scnChips(scnObj){
 function custCard(c){
   var name=esc(c.isim||"İsimsiz");
   var lead=c.lead?'<span class="chip lead">🔔 Talep</span>':"";
+  var human=isPaused(c.numara)?'<span class="chip human">🧑‍💼 Temsilci</span>':"";
   return '<div class="cust" onclick="openCust(\\''+c.key+'\\')">'+
-    '<div class="row1"><div class="nm">'+name+'</div>'+lead+'</div>'+
+    '<div class="row1"><div class="nm">'+name+'</div><div class="chips">'+lead+human+'</div></div>'+
     '<div>'+waLink(c.numara)+'</div>'+
     '<div class="meta">'+c.rows.length+' mesaj · son '+fmtRel(c.last)+'</div>'+
     '<div class="chips">'+scnChips(c.scn)+'</div></div>';
@@ -285,7 +314,8 @@ function overview(){
     card(cs.length,"Müşteri (tekil)","")+
     card(ROWS.length,"Toplam mesaj","blue")+
     card(cToday,"Bugün aktif müşteri","amber")+
-    card(leads.length,"Toplam talep","green")+'</div>';
+    card(leads.length,"Toplam talep","green")+
+    card(HUMAN.length,"Temsilci modunda","amber")+'</div>';
   // senaryo dagilimi
   var counts={}; for(var i=0;i<cs.length;i++){ var ks=Object.keys(cs[i].scn); for(var j=0;j<ks.length;j++) counts[ks[j]]=(counts[ks[j]]||0)+1; }
   var max=1; var keys=Object.keys(counts); for(var k=0;k<keys.length;k++) if(counts[keys[k]]>max) max=counts[keys[k]];
@@ -332,33 +362,77 @@ function scenariosView(){
 }
 function logView(){
   var list=ROWS.slice().reverse();
-  var h='<table class="tbl"><thead><tr><th>Tarih</th><th>İsim</th><th>Numara</th><th>Mesaj / Başvuru</th><th>Bot Cevabı</th><th>Talep</th></tr></thead><tbody>';
+  var h='<div class="tblwrap"><table class="tbl"><thead><tr><th>Tarih</th><th>İsim</th><th>Numara</th><th>Mesaj / Başvuru</th><th>Bot Cevabı</th><th>Talep</th></tr></thead><tbody>';
   for(var i=0;i<list.length;i++){ var r=list[i], lead=String(r.talep).toUpperCase()==="EVET";
     h+='<tr'+(lead?' class="lead"':'')+'><td style="color:var(--muted)">'+esc(fmtDate(r.tarih))+'</td><td>'+esc(r.isim)+'</td><td>'+waLink(r.numara)+'</td><td class="msg">'+esc(r.mesaj)+'</td><td class="msg">'+esc(r.cevap)+'</td><td>'+(lead?'<span class="badge">TALEP</span>':'')+'</td></tr>'; }
-  h+='</tbody></table>'; if(list.length===0) h+='<div class="empty">Kayıt yok.</div>'; return h;
+  h+='</tbody></table></div>'; if(list.length===0) h+='<div class="empty">Kayıt yok.</div>'; return h;
 }
 function openCust(key){
   var cs=customers(), c=null; for(var i=0;i<cs.length;i++) if(cs[i].key===key){ c=cs[i]; break; }
   if(!c) return;
+  openKey=key;
   var rs=c.rows.slice().sort(function(a,b){return new Date(a.tarih)-new Date(b.tarih);});
   var thread=''; for(var j=0;j<rs.length;j++){ var r=rs[j];
+    var isHuman=/^👤/.test(String(r.cevap||""));
     thread+='<div class="turn"><div class="tm">'+esc(fmtDate(r.tarih))+(String(r.talep).toUpperCase()==="EVET"?' · <span style="color:#22c55e">🔔 Talep</span>':'')+'</div>'+
-      '<div class="q">'+esc(r.mesaj)+'</div><div class="a">'+esc(r.cevap)+'</div></div>'; }
-  var html='<span class="x" onclick="closeModal()">✕</span>'+
+      (r.mesaj?'<div class="q">'+esc(r.mesaj)+'</div>':'')+
+      (r.cevap?'<div class="a'+(isHuman?' h':'')+'">'+esc(r.cevap)+'</div>':'')+'</div>'; }
+  var paused=isPaused(c.numara);
+  var head='<span class="x" onclick="closeModal()">✕</span>'+
     '<div class="nm" style="font-size:17px;font-weight:700">'+esc(c.isim||"İsimsiz")+'</div>'+
     '<div style="margin:4px 0 6px">'+waLink(c.numara)+'</div>'+
     '<div class="chips">'+scnChips(c.scn)+'</div>'+
-    '<div class="meta" style="color:var(--muted);font-size:12px;margin-top:8px">'+c.rows.length+' mesaj · ilk: '+fmtDate(c.first)+' · son: '+fmtDate(c.last)+'</div>'+
-    '<div class="thread">'+thread+'</div>';
-  document.getElementById("sheet").innerHTML=html;
+    '<div class="meta" style="color:var(--muted);font-size:12px;margin-top:8px">'+c.rows.length+' mesaj · ilk: '+fmtDate(c.first)+' · son: '+fmtDate(c.last)+'</div>';
+  var foot=(paused?'<div class="pausebar">🧑‍💼 Temsilci modu açık — bot bu müşteride sessiz<button class="btn-resume" onclick="resumeBot(\\''+key+'\\')">Bot\\'a geri ver</button></div>':'')+
+    '<div class="sendrow">'+
+      '<textarea id="msgbox" rows="1" placeholder="Müşteriye yazın... (gönderince bot bu sohbette duraklar)" onkeydown="if(event.key===\\'Enter\\'&&!event.shiftKey){event.preventDefault();sendMsg(\\''+key+'\\');}"></textarea>'+
+      '<button class="btn-send" id="sendbtn" onclick="sendMsg(\\''+key+'\\')">Gönder</button>'+
+    '</div>';
+  document.getElementById("sheet").innerHTML=
+    '<div class="sheet-head">'+head+'</div>'+
+    '<div class="sheet-body" id="threadWrap"><div class="thread">'+thread+'</div></div>'+
+    '<div class="sheet-foot">'+foot+'</div>';
   document.getElementById("modal").classList.add("open");
+  var tw=document.getElementById("threadWrap"); tw.scrollTop=tw.scrollHeight;
 }
-function closeModal(){ document.getElementById("modal").classList.remove("open"); }
+async function sendMsg(key){
+  var box=document.getElementById("msgbox"), btn=document.getElementById("sendbtn");
+  var text=(box.value||"").trim(); if(!text) return;
+  var cs=customers(), c=null; for(var i=0;i<cs.length;i++) if(cs[i].key===key){ c=cs[i]; break; }
+  if(!c) return;
+  box.disabled=true; btn.disabled=true;
+  try{
+    var r=await fetch("/panel/send",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({numara:c.numara,mesaj:text})});
+    if(!r.ok){ alert("Mesaj gönderilemedi. Lütfen tekrar deneyin."); box.disabled=false; btn.disabled=false; return; }
+    ROWS.push({tarih:new Date().toISOString(),numara:c.numara,isim:c.isim,mesaj:"",cevap:"👤 Temsilci: "+text,talep:""});
+    if(!isPaused(c.numara)) HUMAN.push(c.numara);
+    box.value="";
+    render(); openCust(key);
+  }catch(e){ alert("Bağlantı hatası. Lütfen tekrar deneyin."); box.disabled=false; btn.disabled=false; }
+}
+async function resumeBot(key){
+  var cs=customers(), c=null; for(var i=0;i<cs.length;i++) if(cs[i].key===key){ c=cs[i]; break; }
+  if(!c) return;
+  try{
+    await fetch("/panel/resume",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({numara:c.numara})});
+  }catch(e){}
+  for(var i=HUMAN.length-1;i>=0;i--){ if(digits(HUMAN[i])===digits(c.numara)) HUMAN.splice(i,1); }
+  render(); openCust(key);
+}
+function closeModal(){ document.getElementById("modal").classList.remove("open"); openKey=null; }
 document.getElementById("modal").addEventListener("click",function(e){ if(e.target.id==="modal") closeModal(); });
 var navs=document.querySelectorAll(".side nav a");
 for(var i=0;i<navs.length;i++) navs[i].addEventListener("click",function(){ setView(this.getAttribute("data-v")); });
-async function refresh(){ try{ var r=await fetch("/panel/data",{headers:{Accept:"application/json"}}); if(r.ok){ var j=await r.json(); if(j&&j.rows){ ROWS=j.rows; render(); } } }catch(e){} }
-setInterval(refresh,60000);
+async function refresh(){
+  try{
+    var r=await fetch("/panel/data",{headers:{Accept:"application/json"}});
+    if(r.ok){ var j=await r.json(); if(j&&j.rows){ ROWS=j.rows; HUMAN=j.humanNumbers||HUMAN; render(); if(openKey) openCust(openKey); } }
+  }catch(e){}
+}
+// Bir görüşme açıkken daha sık (canlı sohbet hissi), kapalıyken seyrek yenile.
+(function scheduleRefresh(){ setTimeout(function(){ refresh().then(scheduleRefresh); }, openKey?6000:45000); })();
 render();
 </script>
 </body></html>`;
