@@ -174,6 +174,20 @@ export function renderPanel(rows, humanNumbers) {
   .btn-send:disabled{opacity:.6;cursor:default}
   .chip.human{background:rgba(245,158,11,.16);color:#fbbf24;border-color:#f59e0b44}
   .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .hint{color:var(--muted);font-size:13px;margin:-8px 0 14px;line-height:1.5}
+  .filter-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    background:rgba(34,197,94,.1);border:1px solid var(--accent);color:#86efac;border-radius:10px;
+    padding:9px 13px;font-size:13px;margin-bottom:12px}
+  .filter-banner button{background:transparent;border:1px solid #86efac66;color:#86efac;border-radius:8px;
+    padding:5px 10px;font-size:12px;cursor:pointer}
+  .scn-hint{color:var(--muted);font-size:12px;margin-top:8px;text-align:center}
+  .jump-banner{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
+    background:rgba(56,189,248,.1);border:1px solid #38bdf855;color:#7dd3fc;border-radius:10px;
+    padding:8px 12px;font-size:12px;margin-top:10px}
+  .jump-banner button{background:transparent;border:1px solid #7dd3fc66;color:#7dd3fc;border-radius:8px;
+    padding:4px 9px;font-size:12px;cursor:pointer;flex-shrink:0}
+  .turn.hl{background:rgba(34,197,94,.09);border:1px solid var(--accent);border-radius:12px;padding:8px;margin:-8px}
+  .hltag{color:#22c55e;font-size:11px;font-weight:700;margin-bottom:4px}
   @media(max-width:760px){
     .app{flex-direction:column}
     .side{width:auto;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);padding:10px}
@@ -311,7 +325,7 @@ function overview(){
   var tToday=ROWS.filter(function(r){return isToday(r.tarih);}).length;
   var cToday=cs.filter(function(c){return isToday(c.last);}).length;
   var h='<div class="cards">'+
-    card(cs.length,"Müşteri (tekil)","")+
+    card(cs.length,"Toplam müşteri","")+
     card(ROWS.length,"Toplam mesaj","blue")+
     card(cToday,"Bugün aktif müşteri","amber")+
     card(leads.length,"Toplam talep","green")+
@@ -323,7 +337,7 @@ function overview(){
   var bars='';
   for(var b=0;b<keys.length;b++){ var s=SCN[keys[b]]; if(!s)continue; var pct=Math.round(counts[keys[b]]/max*100);
     bars+='<div class="bar"><div style="color:'+s.c+'">'+s.t+'</div><div class="track"><div class="fill" style="width:'+pct+'%;background:'+s.c+'"></div></div><div>'+counts[keys[b]]+'</div></div>'; }
-  h+='<div class="sec-title">Senaryo dağılımı (müşteri sayısı)</div><div class="bars">'+(bars||'<div class="empty">Veri yok</div>')+'</div>';
+  h+='<div class="sec-title">Senaryo dağılımı (müşteri sayısı)</div><div class="hint">Detaylı incelemek için sol menüden <b>🏷️ Senaryolar</b>\\'a gidin.</div><div class="bars">'+(bars||'<div class="empty">Veri yok</div>')+'</div>';
   h+='<div class="sec-title">Son müşteriler</div><div class="grid">';
   for(var c=0;c<Math.min(cs.length,6);c++) h+=custCard(cs[c]);
   h+='</div>'; if(cs.length===0) h+='<div class="empty">Henüz görüşme yok.</div>';
@@ -332,10 +346,15 @@ function overview(){
 function card(n,l,cls){ return '<div class="card '+(cls||"")+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
 function customersView(){
   var cs=customers();
-  var chips='<button class="fchip'+(scnFilter?"":" active")+'" onclick="scnFilter=null;render()">Tümü</button>';
+  var banner='';
+  if(scnFilter && SCN[scnFilter]){
+    banner='<div class="filter-banner"><div>🏷️ <b>'+SCN[scnFilter].t+'</b> ile ilgili müşteriler gösteriliyor — birine tıklayınca doğrudan o konudaki mesaja gidersiniz.</div>'+
+      '<button onclick="scnFilter=null;render()">Filtreyi temizle ✕</button></div>';
+  }
+  var chips='<button class="fchip'+(scnFilter?"":" active")+'" onclick="scnFilter=null;render()">Tüm senaryolar</button>';
   var sk=Object.keys(SCN);
   for(var i=0;i<sk.length;i++){ var s=SCN[sk[i]]; chips+='<button class="fchip'+(scnFilter===sk[i]?" active":"")+'" onclick="scnFilter=\\''+sk[i]+'\\';render()">'+s.t+'</button>'; }
-  var h='<div class="filterbar"><input class="search" placeholder="İsim veya numara ara..." value="'+esc(q)+'" oninput="q=this.value;render()"></div>'+
+  var h=banner+'<div class="filterbar"><input class="search" placeholder="İsim veya numara ara..." value="'+esc(q)+'" oninput="q=this.value;render()"></div>'+
     '<div class="filterbar">'+chips+'</div>';
   var list=cs.filter(function(c){
     if(scnFilter && !c.scn[scnFilter]) return false;
@@ -348,13 +367,14 @@ function customersView(){
 }
 function leadsView(){
   var cs=customers().filter(function(c){return c.lead;});
-  if(cs.length===0) return '<div class="empty">Henüz talep (başvuru) yok.</div>';
-  var h='<div class="grid">'; for(var c=0;c<cs.length;c++) h+=custCard(cs[c]); h+='</div>'; return h;
+  var hint='<div class="hint">🔔 Yalnızca <b>başvuru formunu tamamlayan</b> müşteriler burada listelenir — soru sormak veya sohbet etmek bir müşteriyi buraya düşürmez.</div>';
+  if(cs.length===0) return hint+'<div class="empty">Henüz talep (başvuru) yok.</div>';
+  var h='<div class="grid">'; for(var c=0;c<cs.length;c++) h+=custCard(cs[c]); h+='</div>'; return hint+h;
 }
 function scenariosView(){
   var cs=customers(), counts={};
   for(var i=0;i<cs.length;i++){ var ks=Object.keys(cs[i].scn); for(var j=0;j<ks.length;j++) counts[ks[j]]=(counts[ks[j]]||0)+1; }
-  var sk=Object.keys(SCN), h='<div class="scn-grid">';
+  var sk=Object.keys(SCN), h='<div class="hint">Bir senaryoya tıklayın, sonra listeden bir müşteri seçin — o müşterinin bu konudaki mesajına <b>doğrudan gidersiniz.</b></div>'+'<div class="scn-grid">';
   for(var k=0;k<sk.length;k++){ var s=SCN[sk[k]], n=counts[sk[k]]||0;
     h+='<div class="scn-card" onclick="scnFilter=\\''+sk[k]+'\\';setView(\\'customers\\')" style="border-color:'+s.c+'33">'+
       '<div class="big" style="color:'+s.c+'">'+n+'</div><div class="nm">'+s.t+'</div></div>'; }
@@ -367,22 +387,33 @@ function logView(){
     h+='<tr'+(lead?' class="lead"':'')+'><td style="color:var(--muted)">'+esc(fmtDate(r.tarih))+'</td><td>'+esc(r.isim)+'</td><td>'+waLink(r.numara)+'</td><td class="msg">'+esc(r.mesaj)+'</td><td class="msg">'+esc(r.cevap)+'</td><td>'+(lead?'<span class="badge">TALEP</span>':'')+'</td></tr>'; }
   h+='</tbody></table></div>'; if(list.length===0) h+='<div class="empty">Kayıt yok.</div>'; return h;
 }
-function openCust(key){
+function openCust(key, forceBottom){
   var cs=customers(), c=null; for(var i=0;i<cs.length;i++) if(cs[i].key===key){ c=cs[i]; break; }
   if(!c) return;
   openKey=key;
   var rs=c.rows.slice().sort(function(a,b){return new Date(a.tarih)-new Date(b.tarih);});
+  // Senaryo listesinden geldiyse (scnFilter aktif), o senaryoyla ilgili İLK mesaja atla ve vurgula.
+  var jumpScn = forceBottom ? null : scnFilter;
+  var matchIdx=-1;
   var thread=''; for(var j=0;j<rs.length;j++){ var r=rs[j];
     var isHuman=/^👤/.test(String(r.cevap||""));
-    thread+='<div class="turn"><div class="tm">'+esc(fmtDate(r.tarih))+(String(r.talep).toUpperCase()==="EVET"?' · <span style="color:#22c55e">🔔 Talep</span>':'')+'</div>'+
+    var isMatch = jumpScn && classify(r.mesaj).indexOf(jumpScn)>=0;
+    if(isMatch && matchIdx===-1) matchIdx=j;
+    thread+='<div class="turn'+(isMatch?' hl':'')+'" id="turn-'+j+'">'+
+      (isMatch?'<div class="hltag">🏷️ '+SCN[jumpScn].t+' ile ilgili</div>':'')+
+      '<div class="tm">'+esc(fmtDate(r.tarih))+(String(r.talep).toUpperCase()==="EVET"?' · <span style="color:#22c55e">🔔 Talep</span>':'')+'</div>'+
       (r.mesaj?'<div class="q">'+esc(r.mesaj)+'</div>':'')+
       (r.cevap?'<div class="a'+(isHuman?' h':'')+'">'+esc(r.cevap)+'</div>':'')+'</div>'; }
   var paused=isPaused(c.numara);
+  var jumpBanner = (jumpScn && matchIdx>=0)
+    ? '<div class="jump-banner"><div>🏷️ '+SCN[jumpScn].t+' konusundaki mesaja gidildi.</div><button onclick="openCust(\\''+key+'\\',true)">Tüm sohbeti gör ↓</button></div>'
+    : '';
   var head='<span class="x" onclick="closeModal()">✕</span>'+
     '<div class="nm" style="font-size:17px;font-weight:700">'+esc(c.isim||"İsimsiz")+'</div>'+
     '<div style="margin:4px 0 6px">'+waLink(c.numara)+'</div>'+
     '<div class="chips">'+scnChips(c.scn)+'</div>'+
-    '<div class="meta" style="color:var(--muted);font-size:12px;margin-top:8px">'+c.rows.length+' mesaj · ilk: '+fmtDate(c.first)+' · son: '+fmtDate(c.last)+'</div>';
+    '<div class="meta" style="color:var(--muted);font-size:12px;margin-top:8px">'+c.rows.length+' mesaj · ilk: '+fmtDate(c.first)+' · son: '+fmtDate(c.last)+'</div>'+
+    jumpBanner;
   var foot=(paused?'<div class="pausebar">🧑‍💼 Temsilci modu açık — bot bu müşteride sessiz<button class="btn-resume" onclick="resumeBot(\\''+key+'\\')">Bot\\'a geri ver</button></div>':'')+
     '<div class="sendrow">'+
       '<textarea id="msgbox" rows="1" placeholder="Müşteriye yazın... (gönderince bot bu sohbette duraklar)" onkeydown="if(event.key===\\'Enter\\'&&!event.shiftKey){event.preventDefault();sendMsg(\\''+key+'\\');}"></textarea>'+
@@ -393,7 +424,14 @@ function openCust(key){
     '<div class="sheet-body" id="threadWrap"><div class="thread">'+thread+'</div></div>'+
     '<div class="sheet-foot">'+foot+'</div>';
   document.getElementById("modal").classList.add("open");
-  var tw=document.getElementById("threadWrap"); tw.scrollTop=tw.scrollHeight;
+  var tw=document.getElementById("threadWrap");
+  if(matchIdx>=0){
+    var target=document.getElementById("turn-"+matchIdx);
+    if(target && target.scrollIntoView) target.scrollIntoView({block:"center"});
+    else tw.scrollTop=tw.scrollHeight;
+  } else {
+    tw.scrollTop=tw.scrollHeight;
+  }
 }
 async function sendMsg(key){
   var box=document.getElementById("msgbox"), btn=document.getElementById("sendbtn");
@@ -408,7 +446,7 @@ async function sendMsg(key){
     ROWS.push({tarih:new Date().toISOString(),numara:c.numara,isim:c.isim,mesaj:"",cevap:"👤 Temsilci: "+text,talep:""});
     if(!isPaused(c.numara)) HUMAN.push(c.numara);
     box.value="";
-    render(); openCust(key);
+    render(); openCust(key, true);
   }catch(e){ alert("Bağlantı hatası. Lütfen tekrar deneyin."); box.disabled=false; btn.disabled=false; }
 }
 async function resumeBot(key){
@@ -419,7 +457,7 @@ async function resumeBot(key){
       body:JSON.stringify({numara:c.numara})});
   }catch(e){}
   for(var i=HUMAN.length-1;i>=0;i--){ if(digits(HUMAN[i])===digits(c.numara)) HUMAN.splice(i,1); }
-  render(); openCust(key);
+  render(); openCust(key, true);
 }
 function closeModal(){ document.getElementById("modal").classList.remove("open"); openKey=null; }
 document.getElementById("modal").addEventListener("click",function(e){ if(e.target.id==="modal") closeModal(); });
@@ -428,7 +466,7 @@ for(var i=0;i<navs.length;i++) navs[i].addEventListener("click",function(){ setV
 async function refresh(){
   try{
     var r=await fetch("/panel/data",{headers:{Accept:"application/json"}});
-    if(r.ok){ var j=await r.json(); if(j&&j.rows){ ROWS=j.rows; HUMAN=j.humanNumbers||HUMAN; render(); if(openKey) openCust(openKey); } }
+    if(r.ok){ var j=await r.json(); if(j&&j.rows){ ROWS=j.rows; HUMAN=j.humanNumbers||HUMAN; render(); if(openKey) openCust(openKey, true); } }
   }catch(e){}
 }
 // Bir görüşme açıkken daha sık (canlı sohbet hissi), kapalıyken seyrek yenile.
